@@ -3,7 +3,7 @@ package frc.robot;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-
+import com.revrobotics.spark.config.SparkBaseConfig;
 import frc.robot.Constants.ModuleConstants;
 
 public final class Configs {
@@ -50,6 +50,26 @@ public final class Configs {
                     // longer route.
                     .positionWrappingEnabled(true)
                     .positionWrappingInputRange(0, turningFactor);
+        }
+    }
+
+    public static final class intake {
+        public static final SparkMaxConfig intake_config = new SparkMaxConfig();
+
+        static {
+            intake_config
+                    .idleMode(IdleMode.kBrake)
+                    .smartCurrentLimit(40);
+        }
+    }
+    public static final class belt {
+
+        public static final SparkMaxConfig belt_config = new SparkMaxConfig();
+        
+        static {
+            belt_config
+                    .idleMode(IdleMode.kBrake)
+                    .smartCurrentLimit(40);
         }
     }
 }

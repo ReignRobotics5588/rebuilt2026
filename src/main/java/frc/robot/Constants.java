@@ -103,4 +103,10 @@ public final class Constants {
   public static final class NeoMotorConstants {
     public static final double kFreeSpeedRpm = 5676;
   }
+  public static final class IntakeConstants {
+    public static final double kIntakeSpeed = 0.5;
+  }
+  public static final class BeltConstants {
+    public static final double kBeltSpeed = 0.33;
+  }
 }

@@ -12,7 +12,8 @@ import frc.robot.subsystems.DriveSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-
+import frc.robot.subsystems.Intake;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -22,7 +23,7 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 public class RobotContainer {
   // The robot's subsystems
   public static final DriveSubsystem m_robotDrive = new DriveSubsystem();
-
+  public static final Intake m_intake = new Intake();
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
 
@@ -33,6 +34,9 @@ public class RobotContainer {
     // Configure the button bindings
     configureButtonBindings();
     DriverStation.silenceJoystickConnectionWarning(true);
+    m_intake.setDefaultCommand(
+      new RunCommand(() -> m_intake.setSpeed(0), m_intake)
+    );
 
     // Configure default commands
     m_robotDrive.setDefaultCommand(
@@ -57,9 +61,10 @@ public class RobotContainer {
    * {@link JoystickButton}.
    */
   private void configureButtonBindings() {
-    // Add button bindings here as needed
-    // Example: new JoystickButton(m_driverController, XboxController.Button.kX.value)
-    //     .whileTrue(new RunCommand(() -> m_robotDrive.setX(), m_robotDrive));
+
+    new JoystickButton(m_driverController, XboxController.Button.kX.value).whileTrue(new RunCommand(() -> m_robotDrive.setX(), m_robotDrive));
+    new JoystickButton(m_driverController, XboxController.Button.kA.value).toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(Constants.IntakeConstants.kIntakeSpeed), m_intake));
+    new JoystickButton(m_driverController, XboxController.Button.kB.value).toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(Constants.BeltConstants.kBeltSpeed), m_intake));
   }
 
   /**
