@@ -60,6 +60,10 @@ public final class Constants {
 
     public static final boolean kGyroReversed = false;
     public static final int intakeID = 5;
+    
+    public static final int shooterFlexID = 12;
+    public static final int shooterMaxID = 13;
+    
   }
 
   public static final class ModuleConstants {
@@ -108,5 +112,9 @@ public final class Constants {
   }
   public static final class BeltConstants {
     public static final double kBeltSpeed = 0.33;
+  }
+
+  public static final class ShooterConstants {
+    public static final double kShooterSpeed = 0.5;
   }
 }

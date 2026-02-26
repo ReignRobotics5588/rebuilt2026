@@ -1,6 +1,7 @@
 package frc.robot;
 
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.SparkFlexConfig;
 import com.revrobotics.spark.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkBaseConfig;
@@ -61,7 +62,30 @@ public final class Configs {
                     .idleMode(IdleMode.kBrake)
                     .smartCurrentLimit(40);
         }
+
     }
+    public static final class shooterFlex {
+        public static final SparkFlexConfig shooterFlex_config = new SparkFlexConfig();
+
+        static {
+            shooterFlex_config
+                    .idleMode(IdleMode.kBrake)
+                    .smartCurrentLimit(40);
+        }
+    
+}
+
+ public static final class shooterMax {
+        public static final SparkMaxConfig shooterMax_config = new SparkMaxConfig();
+
+        static {
+            shooterMax_config
+                    .idleMode(IdleMode.kBrake)
+                    .smartCurrentLimit(40);
+        }
+    
+}
+
     public static final class belt {
 
         public static final SparkMaxConfig belt_config = new SparkMaxConfig();
