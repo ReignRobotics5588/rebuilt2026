@@ -19,8 +19,6 @@ public class Belt extends SubsystemBase {
   }
 
   public void setSpeed(double speed) {
-    System.out.println("setting belt");
-
     m_belt.set(speed);
   }
     

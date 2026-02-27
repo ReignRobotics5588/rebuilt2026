@@ -3,6 +3,7 @@ package frc.robot.commands.auto;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.path.PathPlannerPath;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.RobotContainer;
@@ -100,7 +101,7 @@ public class PathPlannerAutoFactory {
    */
   public static Command loadPath(String pathName) {
     try {
-      return new PathPlannerAuto(pathName);
+      return AutoBuilder.followPath(PathPlannerPath.fromPathFile(pathName));
     } catch (Exception e) {
       System.err.println("[PathPlannerAutoFactory] Failed to load path: " + pathName);
       e.printStackTrace();

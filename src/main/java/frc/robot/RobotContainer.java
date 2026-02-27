@@ -58,7 +58,7 @@ public class RobotContainer {
     
     // Add PathPlanner path options to chooser
     m_autoChooser.setDefaultOption("Do Nothing", Commands.none());
-    m_autoChooser.addOption("Example Path", PathPlannerAutoFactory.loadPath("ExamplePath"));
+    m_autoChooser.addOption("Test", PathPlannerAutoFactory.loadPath("Test"));
     // Add more paths as they are created:
     // m_autoChooser.addOption("Shoot and Intake", PathPlannerAutoFactory.loadPath("ShootAndIntake"));
     // m_autoChooser.addOption("Drive Forward", PathPlannerAutoFactory.loadPath("DriveForward"));
@@ -125,7 +125,7 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // Return the selected autonomous command from the chooser
-    return m_autoChooser.getSelected();
+    String selected = SmartDashboard.getString("Auto Choices", "TestDriveForward");
+    return PathPlannerAutoFactory.loadPath(selected);
   }
 }

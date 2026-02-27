@@ -132,13 +132,11 @@ public class Shooter extends SubsystemBase {
     }
 
   public void setShooterFlexSpeed(double speed) {
-    System.out.println("setting shooter flex");
     m_flexOutputPercent = speed;
     m_shooterFlex.set(speed);
   }
 
    public void setShooterMaxSpeed(double speed) {
-    System.out.println("setting shooter max");
     m_maxOutputPercent = speed;
     m_shooterMax.set(speed);
   }
