@@ -5,6 +5,10 @@
 package frc.robot.subsystems;
 
 import com.ctre.phoenix6.hardware.Pigeon2;
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.hal.FRCNetComm.tInstances;
 import edu.wpi.first.hal.FRCNetComm.tResourceType;
@@ -59,6 +63,37 @@ public class DriveSubsystem extends SubsystemBase {
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
+
+    // Configure AutoBuilder for PathPlanner
+    try {
+      var config = RobotConfig.fromGUISettings();
+      AutoBuilder.configure(
+          this::getPose, // Pose2d supplier
+          this::resetOdometry, // Pose2d consumer, used to reset odometry at the beginning of auto
+          this::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+          this::driveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+          new PPHolonomicDriveController( // PPHolonomicController is the built in path following controller for holonomic drive trains
+              new PIDConstants(DriveConstants.kPTranslation, 0.0, 0.0), // Translation PID constants
+              new PIDConstants(DriveConstants.kPRotation, 0.0, 0.0) // Rotation PID constants
+          ),
+          config, // The robot configuration
+          () -> {
+            // Boolean supplier that controls when the path will be mirrored for the red alliance
+            // This will flip the path being followed to the red side of the field.
+            // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+            var alliance = edu.wpi.first.wpilibj.DriverStation.getAlliance();
+            if (alliance.isPresent()) {
+              return alliance.get() == edu.wpi.first.wpilibj.DriverStation.Alliance.Red;
+            }
+            return false;
+          },
+          this // Reference to this subsystem to set requirements
+      );
+    } catch (Exception e) {
+      // Handle exception as needed
+      e.printStackTrace();
+    }
   }
 
   Rotation2d getGyroAngle() {
@@ -102,6 +137,27 @@ public class DriveSubsystem extends SubsystemBase {
             m_rearRight.getPosition()
         },
         pose);
+  }
+
+  /**
+   * Returns the current robot-relative ChassisSpeeds of the robot.
+   * @return Robot-relative ChassisSpeeds
+   */
+  public ChassisSpeeds getRobotRelativeSpeeds() {
+    return DriveConstants.kDriveKinematics.toChassisSpeeds(
+        m_frontLeft.getState(),
+        m_frontRight.getState(),
+        m_rearLeft.getState(),
+        m_rearRight.getState());
+  }
+
+  /**
+   * Drives the robot using robot-relative ChassisSpeeds.
+   * @param speeds Robot-relative ChassisSpeeds
+   * @param feedforwards Drive feedforwards (optional, can be ignored for basic path following)
+   */
+  public void driveRobotRelative(ChassisSpeeds speeds, Object feedforwards) {
+    setModuleStates(DriveConstants.kDriveKinematics.toSwerveModuleStates(speeds));
   }
 
   /**

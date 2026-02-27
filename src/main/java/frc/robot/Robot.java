@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.sim.RobotSimulation;
 
 
 /**
@@ -29,6 +30,15 @@ public class Robot extends TimedRobot {
     // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
     // autonomous chooser on the dashboard.
     m_robotContainer = new RobotContainer();
+    
+    // Initialize simulation if in simulation mode
+    try {
+      if (Thread.currentThread().getStackTrace().toString().contains("simulation")) {
+        RobotSimulation.getInstance().init();
+      }
+    } catch (Exception e) {
+      // Not in simulation, continue normally
+    }
   }
 
   /**

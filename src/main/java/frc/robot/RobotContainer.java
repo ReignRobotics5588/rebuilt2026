@@ -7,6 +7,8 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.DriveSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -19,6 +21,7 @@ import frc.robot.subsystems.Limelight;
 import frc.robot.commands.IntakeBeltCommand;
 import frc.robot.commands.ShooterBeltCommand;
 import frc.robot.commands.LimelightAlignCommand;
+import frc.robot.commands.auto.PathPlannerAutoFactory;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -36,6 +39,9 @@ public class RobotContainer {
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
 
+  // Autonomous command selector
+  private SendableChooser<Command> m_autoChooser;
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
@@ -43,6 +49,22 @@ public class RobotContainer {
     // Configure the button bindings
     configureButtonBindings();
     DriverStation.silenceJoystickConnectionWarning(true);
+    
+    // Register PathPlanner named commands for event markers
+    PathPlannerAutoFactory.registerCommands(m_robotDrive, m_shooter, m_intake, m_belt);
+    
+    // Initialize autonomous chooser
+    m_autoChooser = new SendableChooser<>();
+    
+    // Add PathPlanner path options to chooser
+    m_autoChooser.setDefaultOption("Do Nothing", Commands.none());
+    m_autoChooser.addOption("Example Path", PathPlannerAutoFactory.loadPath("ExamplePath"));
+    // Add more paths as they are created:
+    // m_autoChooser.addOption("Shoot and Intake", PathPlannerAutoFactory.loadPath("ShootAndIntake"));
+    // m_autoChooser.addOption("Drive Forward", PathPlannerAutoFactory.loadPath("DriveForward"));
+    
+    SmartDashboard.putData("Auto Choices", m_autoChooser);
+    
     m_intake.setDefaultCommand(
       new RunCommand(() -> m_intake.setSpeed(0), m_intake)
     );
@@ -103,30 +125,7 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // Example autonomous routines using AutoCommandFactory:
-    
-    // Option 1: Simple drive forward
-    // return Commands.waitSeconds(2).deadlineFor(new RunCommand(
-    //   () -> m_robotDrive.drive(-0.6, 0.0, 0.0, false), m_robotDrive)
-    // );
-    
-    // Option 2: Shoot then intake (requires PathPlanner or trajectory following for movement)
-    // return AutoCommandFactory.shootThenIntake(m_shooter, m_belt, m_intake);
-    
-    // Option 3: Shoot while intaking in parallel
-    // return AutoCommandFactory.shootWhileIntaking(m_shooter, m_belt, m_intake);
-    
-    // TODO: Implement proper autonomous using PathPlanner or trajectory following
-    // For now, returns a simple command that drives forward for 2 seconds
-    return Commands.waitSeconds(2).deadlineFor(new RunCommand(
-      () -> {
-        m_robotDrive.drive(
-          -0.6,
-          0.0,
-          0.0,
-          false);
-      },
-      m_robotDrive)
-    );
+    // Return the selected autonomous command from the chooser
+    return m_autoChooser.getSelected();
   }
 }

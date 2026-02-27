@@ -64,6 +64,10 @@ public final class Constants {
     
     public static final int shooterFlexID = 12;
     public static final int shooterMaxID = 13;
+
+    // PathPlanner PID constants for autonomous path following
+    public static final double kPTranslation = 5.0; // P constant for translation PID
+    public static final double kPRotation = 5.0; // P constant for rotation PID
     
   }
 
