@@ -59,7 +59,8 @@ public final class Constants {
     public static final int kGyroID = 11;
 
     public static final boolean kGyroReversed = false;
-    public static final int intakeID = 5;
+    public static final int intakeID = 10;
+    public static final int beltID = 14;
     
     public static final int shooterFlexID = 12;
     public static final int shooterMaxID = 13;
@@ -115,6 +116,50 @@ public final class Constants {
   }
 
   public static final class ShooterConstants {
+    // Flywheel speed (percent output)
     public static final double kShooterSpeed = 0.5;
+    
+    // Feeder wheel speed (percent output)
+    public static final double kFeederSpeed = 0.5;
+    
+    // Target RPM for shooter flywheel (SparkFlex)
+    public static final double kShooterTargetRPM = 3000.0;
+    
+    // RPM tolerance for speed control (±RPM)
+    public static final double kShooterRpmTolerance = 200.0;
+    
+    // PID tuning parameters for SparkFlex internal controller (flywheel only)
+    public static final double kShooterFlexP = 0.0005;
+    public static final double kShooterFlexI = 0.0;
+    public static final double kShooterFlexD = 0.0;
+    public static final double kShooterFlexFF = 0.000156;
+  }
+
+  public static final class LimelightConstants {
+    // Network table name for Limelight 2
+    public static final String kLimelightTableName = "limelight";
+    
+    // Limelight 2 pipeline ID (0 = default April tag pipeline)
+    public static final int kAprilTagPipeline = 0;
+    
+    // Camera mounting position (meters from robot center)
+    public static final double kCameraOffsetX = 0.0;  // Forward/backward offset
+    public static final double kCameraOffsetY = 0.0;  // Left/right offset
+    public static final double kCameraHeightFromGround = 0.5;  // Height in meters
+    
+    // Camera angle (degrees, positive = tilted up)
+    public static final double kCameraPitchDegrees = 0.0;
+    public static final double kCameraRollDegrees = 0.0;
+    
+    // Robot heading correction (PID gains for auto-alignment to AprilTag)
+    public static final double kHeadingAlignP = 0.1;
+    public static final double kHeadingAlignI = 0.0;
+    public static final double kHeadingAlignD = 0.05;
+    
+    // Target alignment tolerance (degrees)
+    public static final double kHeadingTolerance = 2.0;
+    
+    // Max angular velocity during alignment (rad/s)
+    public static final double kMaxAlignmentAngularVelocity = 2.0;
   }
 }

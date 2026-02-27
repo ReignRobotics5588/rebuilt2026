@@ -71,6 +71,17 @@ public final class Configs {
             shooterFlex_config
                     .idleMode(IdleMode.kBrake)
                     .smartCurrentLimit(40);
+            
+            // Configure PID for velocity control using the internal encoder
+            shooterFlex_config.encoder
+                    .velocityConversionFactor(1.0); // Default is 1 RPM per tick
+            
+            shooterFlex_config.closedLoop
+                    .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+                    .pid(Constants.ShooterConstants.kShooterFlexP,
+                         Constants.ShooterConstants.kShooterFlexI,
+                         Constants.ShooterConstants.kShooterFlexD)
+                    .outputRange(-1.0, 1.0);
         }
     
 }

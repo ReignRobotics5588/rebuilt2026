@@ -14,6 +14,11 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.Belt;
+import frc.robot.subsystems.Limelight;
+import frc.robot.commands.IntakeBeltCommand;
+import frc.robot.commands.ShooterBeltCommand;
+import frc.robot.commands.LimelightAlignCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -25,8 +30,9 @@ public class RobotContainer {
   // The robot's subsystems
   public static final DriveSubsystem m_robotDrive = new DriveSubsystem();
   public static final Intake m_intake = new Intake();
-  public static final Shooter m_shooterFlex = new Shooter();
-  public static final Shooter m_shooterMax = new Shooter();
+  public static final Shooter m_shooter = new Shooter();
+  public static final Belt m_belt = new Belt();
+  public static final Limelight m_limelight = new Limelight();
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
 
@@ -41,12 +47,11 @@ public class RobotContainer {
       new RunCommand(() -> m_intake.setSpeed(0), m_intake)
     );
 
-    m_shooterFlex.setDefaultCommand(
-      new RunCommand(() -> m_shooterFlex.setShooterFlexSpeed(0), m_shooterFlex)
-    );
-
-    m_shooterMax.setDefaultCommand(
-      new RunCommand(() -> m_shooterMax.setShooterFlexSpeed(0), m_shooterMax)
+    m_shooter.setDefaultCommand(
+      new RunCommand(() -> {
+        m_shooter.setShooterFlexSpeed(0);
+        m_shooter.setShooterMaxSpeed(0);
+      }, m_shooter)
     );
 
     // Configure default commands
@@ -74,11 +79,22 @@ public class RobotContainer {
   private void configureButtonBindings() {
 
     new JoystickButton(m_driverController, XboxController.Button.kX.value).whileTrue(new RunCommand(() -> m_robotDrive.setX(), m_robotDrive));
-    new JoystickButton(m_driverController, XboxController.Button.kA.value).toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(Constants.IntakeConstants.kIntakeSpeed), m_intake));
-    new JoystickButton(m_driverController, XboxController.Button.kB.value).toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(Constants.BeltConstants.kBeltSpeed), m_intake));
     
-    new JoystickButton(m_driverController, XboxController.Button.kY.value).toggleOnTrue(new RunCommand(() -> m_shooterFlex.setShooterFlexSpeed(Constants.ShooterConstants.kShooterSpeed), m_shooterFlex));
-    new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value).toggleOnTrue(new RunCommand(() -> m_shooterMax.setShooterMaxSpeed(Constants.ShooterConstants.kShooterSpeed), m_shooterMax));
+    // Intake + Belt: Run together simultaneously
+    new JoystickButton(m_driverController, XboxController.Button.kA.value)
+        .toggleOnTrue(new IntakeBeltCommand(m_intake, m_belt));
+    
+    // Shooter + Belt: Shooter ramps to speed first, then belt engages
+    new JoystickButton(m_driverController, XboxController.Button.kY.value)
+        .toggleOnTrue(new ShooterBeltCommand(m_shooter, m_belt));
+    
+    // Limelight vision alignment: Align to detected April tag
+    new JoystickButton(m_driverController, XboxController.Button.kB.value)
+        .whileTrue(new LimelightAlignCommand(m_robotDrive, m_limelight));
+    
+    // Old individual button bindings (kept for reference - remove if no longer needed)
+    // new JoystickButton(m_driverController, XboxController.Button.kB.value).toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(Constants.BeltConstants.kBeltSpeed), m_intake));
+    // new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value).toggleOnTrue(new RunCommand(() -> m_shooter.setShooterMaxSpeed(Constants.ShooterConstants.kShooterSpeed), m_shooter));
   }
 
   /**
@@ -87,10 +103,21 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // TODO: Implement proper autonomous using PathPlanner or trajectory following
-    // For now, returns a simple command that drives forward
+    // Example autonomous routines using AutoCommandFactory:
     
-    // Return a simple autonomous command that drives forward for 2 seconds
+    // Option 1: Simple drive forward
+    // return Commands.waitSeconds(2).deadlineFor(new RunCommand(
+    //   () -> m_robotDrive.drive(-0.6, 0.0, 0.0, false), m_robotDrive)
+    // );
+    
+    // Option 2: Shoot then intake (requires PathPlanner or trajectory following for movement)
+    // return AutoCommandFactory.shootThenIntake(m_shooter, m_belt, m_intake);
+    
+    // Option 3: Shoot while intaking in parallel
+    // return AutoCommandFactory.shootWhileIntaking(m_shooter, m_belt, m_intake);
+    
+    // TODO: Implement proper autonomous using PathPlanner or trajectory following
+    // For now, returns a simple command that drives forward for 2 seconds
     return Commands.waitSeconds(2).deadlineFor(new RunCommand(
       () -> {
         m_robotDrive.drive(

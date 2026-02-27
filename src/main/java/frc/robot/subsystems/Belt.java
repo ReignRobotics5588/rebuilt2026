@@ -11,7 +11,7 @@ import com.revrobotics.ResetMode;
 
 public class Belt extends SubsystemBase {
   /** Creates a new Belt. */
-  public static SparkMax m_belt = new SparkMax(Constants.DriveConstants.intakeID, SparkLowLevel.MotorType.kBrushed);
+  private static SparkMax m_belt = new SparkMax(Constants.DriveConstants.beltID, SparkLowLevel.MotorType.kBrushed);
 
   public Belt() {
     m_belt.configure(Configs.intake.intake_config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
