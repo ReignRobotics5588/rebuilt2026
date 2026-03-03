@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.Limelight;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * Example autonomous commands showing how to use Limelight vision for positioning.
@@ -80,10 +81,10 @@ public class VisionAutoExamples {
         // Step 3: Verify still aligned and target still visible
         Commands.runOnce(() -> {
           if (limelight.hasValidTarget() && Math.abs(limelight.getTargetOffsetX()) < 3.0) {
-            System.out.println("[VisionAuto] Aligned! Would shoot here.");
+            SmartDashboard.putString("Vision/Status", "[VisionAuto] Aligned! Would shoot here.");
             // TODO: Add shooter.shoot() command here
           } else {
-            System.out.println("[VisionAuto] Lost target or misaligned!");
+            SmartDashboard.putString("Vision/Status", "[VisionAuto] Lost target or misaligned!");
           }
         }),
         
@@ -98,20 +99,20 @@ public class VisionAutoExamples {
   public static Command debugVisionData(Limelight limelight) {
     return Commands.run(() -> {
       if (limelight.hasValidTarget()) {
-        System.out.println(limelight.getDebugString());
+        SmartDashboard.putString("Vision/Debug", limelight.getDebugString());
         
         // Additional detailed output:
         double[] pose = limelight.getRobotPose();
         double[] poseRelative = limelight.getRobotPoseRelativeToTarget();
         
-        System.out.printf(
-            "  Field Pose: (%.2f, %.2f) at %.1f° | " +
-            "Tag Relative: x=%.2fm, y=%.2fm%n",
+        String formatted = String.format(
+            "Field Pose: (%.2f, %.2f) at %.1f° | Tag Relative: x=%.2fm, y=%.2fm",
             pose[0], pose[1], pose[5],
             poseRelative[0], poseRelative[1]
         );
+        SmartDashboard.putString("Vision/DebugExtra", formatted);
       } else {
-        System.out.println("[Vision] No target detected");
+        SmartDashboard.putString("Vision/Status", "[Vision] No target detected");
       }
     }, limelight)
     .withTimeout(5.0);  // Run for 5 seconds
@@ -128,13 +129,13 @@ public class VisionAutoExamples {
       int... tagIDs) {
     
     return Commands.sequence(
-        // For each tag ID in the list
-        Commands.runOnce(() -> System.out.println("[VisionAuto] Starting multi-tag sequence")),
+  // For each tag ID in the list
+  Commands.runOnce(() -> SmartDashboard.putString("Vision/Status", "[VisionAuto] Starting multi-tag sequence")),
         
         // Shoot at each tag in sequence
         new LimelightAlignCommand(drive, limelight),
         Commands.waitSeconds(0.5),
-        Commands.runOnce(() -> System.out.println("[VisionAuto] Aligned to tag")),
+  Commands.runOnce(() -> SmartDashboard.putString("Vision/Status", "[VisionAuto] Aligned to tag")),
         
         // Stop
         Commands.runOnce(() -> drive.drive(0, 0, 0, false))

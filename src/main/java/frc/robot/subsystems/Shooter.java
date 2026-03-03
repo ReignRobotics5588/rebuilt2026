@@ -23,6 +23,8 @@ public class Shooter extends SubsystemBase {
     private double m_targetRPM = 0.0;
     private double m_flexOutputPercent = 0.0;
     private double m_maxOutputPercent = 0.0;
+  private double m_lastFlexSpeed = 0.0;
+  private double m_lastMaxSpeed = 0.0;
     
     // PID tuning values from dashboard
     private double m_dashboardP = Constants.ShooterConstants.kShooterFlexP;
@@ -96,10 +98,10 @@ public class Shooter extends SubsystemBase {
             // Apply new configuration
             m_shooterFlex.configure(updatedConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
             
-            System.out.println(String.format(
-                "[Shooter] PID Updated: P=%.6f, I=%.6f, D=%.6f, FF=%.6f",
-                m_dashboardP, m_dashboardI, m_dashboardD, m_dashboardFF
-            ));
+      SmartDashboard.putString("Shooter/Status", String.format(
+        "[Shooter] PID Updated: P=%.6f, I=%.6f, D=%.6f, FF=%.6f",
+        m_dashboardP, m_dashboardI, m_dashboardD, m_dashboardFF
+      ));
         }
     }
 
@@ -119,6 +121,9 @@ public class Shooter extends SubsystemBase {
         // Max shooter (feeder wheel)
         SmartDashboard.putNumber("Shooter/Max RPM", getMaxRPM());
         SmartDashboard.putNumber("Shooter/Max Output %", m_maxOutputPercent);
+  // Last commanded speeds
+  SmartDashboard.putNumber(Constants.LimelightConstants.kShooterLastFlexSpeedKey, m_lastFlexSpeed);
+  SmartDashboard.putNumber(Constants.LimelightConstants.kShooterLastMaxSpeedKey, m_lastMaxSpeed);
         
         // Dashboard tuning values
         SmartDashboard.putNumber("Shooter/Dashboard Target RPM", m_dashboardTargetRPM);
@@ -132,13 +137,13 @@ public class Shooter extends SubsystemBase {
     }
 
   public void setShooterFlexSpeed(double speed) {
-    System.out.println("setting shooter flex");
+    m_lastFlexSpeed = speed;
     m_flexOutputPercent = speed;
     m_shooterFlex.set(speed);
   }
 
    public void setShooterMaxSpeed(double speed) {
-    System.out.println("setting shooter max");
+    m_lastMaxSpeed = speed;
     m_maxOutputPercent = speed;
     m_shooterMax.set(speed);
   }

@@ -3,6 +3,7 @@ package frc.robot.subsystems;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
@@ -45,13 +46,29 @@ public class Limelight extends SubsystemBase {
    * Initialize dashboard with target tag ID
    */
   private void initializeDashboard() {
-    SmartDashboard.putNumber("Limelight/Target Tag ID", -1);
+    // Only publish the minimal keys needed for tuning angling and distance
+    SmartDashboard.putBoolean(Constants.LimelightConstants.kDashboardHasTargetKey, false);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, 0.0);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, 0.0);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, 0.0);
   }
 
   @Override
   public void periodic() {
-    // Read desired tag ID from dashboard
-    m_desiredTagID = (int) SmartDashboard.getNumber("Limelight/Target Tag ID", -1);
+    // Choose desired tag ID based on alliance color to avoid shooting the wrong target.
+    // Red alliance should target 10, Blue alliance should target 26.
+    String allianceName = DriverStation.getAlliance().map(Enum::name).orElse("Invalid");
+    if ("RED".equalsIgnoreCase(allianceName)) {
+      m_desiredTagID = Constants.LimelightConstants.kRedAllianceTargetTagID;
+    } else if ("BLUE".equalsIgnoreCase(allianceName)) {
+      m_desiredTagID = Constants.LimelightConstants.kBlueAllianceTargetTagID;
+    } else {
+      // Unknown/ invalid alliance (e.g., practice) - allow dashboard override (-1 means any tag)
+      m_desiredTagID = (int) SmartDashboard.getNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, -1);
+    }
+    // Keep dashboard in sync so drivers can see which tag we're targeting
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, m_desiredTagID);
     
     // Update vision tracking data every cycle
     updateTargetData();
@@ -80,29 +97,13 @@ public class Limelight extends SubsystemBase {
    */
   private void updateTelemetry() {
     // Target detection status
-    SmartDashboard.putBoolean("Limelight/Has Target", m_hasTarget);
-    SmartDashboard.putNumber("Limelight/Target ID", m_targetID);
-    SmartDashboard.putBoolean("Limelight/Has Desired Target", hasDesiredTarget());
-    
-    // Offsets and positioning
-    SmartDashboard.putNumber("Limelight/Offset X (deg)", m_targetOffsetX);
-    SmartDashboard.putNumber("Limelight/Offset Y (deg)", m_targetOffsetY);
-    SmartDashboard.putNumber("Limelight/Target Area (%)", getTargetArea());
-    
-    // Distance measurements
+    // Only publish data required for tuning angling and distance
+    SmartDashboard.putBoolean(Constants.LimelightConstants.kDashboardHasTargetKey, m_hasTarget);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, m_targetOffsetX);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, m_targetOffsetY);
     double[] poseRelative = getRobotPoseRelativeToTarget();
-    SmartDashboard.putNumber("Limelight/Distance to Target (m)", poseRelative[0]);
-    SmartDashboard.putNumber("Limelight/Horizontal Distance (m)", poseRelative[1]);
-    
-    // Field positioning
-    double[] fieldPose = getRobotPose();
-    SmartDashboard.putNumber("Limelight/Robot X (m)", fieldPose[0]);
-    SmartDashboard.putNumber("Limelight/Robot Y (m)", fieldPose[1]);
-    SmartDashboard.putNumber("Limelight/Robot Heading (deg)", fieldPose[5]);
-    
-    // Camera diagnostics
-    SmartDashboard.putNumber("Limelight/Pipeline Latency (ms)", getPipelineLatency());
-    SmartDashboard.putNumber("Limelight/Active Pipeline", getPipeline());
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, poseRelative[0]);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, poseRelative[1]);
   }
 
   /**

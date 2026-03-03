@@ -4,6 +4,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.Limelight;
 
@@ -46,17 +47,16 @@ public class LimelightAlignCommand extends Command {
   public void initialize() {
     // Ensure Limelight is active
     m_limelight.setLimelightActive(true);
-    System.out.println("[LimelightAlignCommand] Starting alignment...");
+    SmartDashboard.putString(Constants.LimelightConstants.kDashboardStatusKey, "[LimelightAlignCommand] Starting alignment...");
   }
 
   @Override
   public void execute() {
     if (!m_limelight.hasDesiredTarget()) {
       if (!m_limelight.hasValidTarget()) {
-        System.out.println("[LimelightAlignCommand] No April tag detected!");
+        SmartDashboard.putString(Constants.LimelightConstants.kDashboardStatusKey, "[LimelightAlignCommand] No April tag detected!");
       } else {
-        System.out.println("[LimelightAlignCommand] Wrong tag detected! ID: " + m_limelight.getTargetID() + 
-                           ", Desired: " + m_limelight.getDesiredTagID());
+        SmartDashboard.putString(Constants.LimelightConstants.kDashboardStatusKey, "[LimelightAlignCommand] Wrong tag detected! ID: " + m_limelight.getTargetID() + ", Desired: " + m_limelight.getDesiredTagID());
       }
       m_drive.drive(0, 0, 0, false);
       return;
@@ -79,12 +79,12 @@ public class LimelightAlignCommand extends Command {
     // Drive command: no translation, only rotation
     m_drive.drive(0, 0, rotationSpeed, false);
     
-    System.out.println(String.format(
-        "[LimelightAlignCommand] Offset: %.2f° | Rotation: %.2f rad/s | %s",
-        offsetX,
-        rotationSpeed,
-        m_limelight.getDebugString()
-    ));
+  SmartDashboard.putString(Constants.LimelightConstants.kDashboardDebugKey, String.format(
+    "[LimelightAlignCommand] Offset: %.2f° | Rotation: %.2f rad/s | %s",
+    offsetX,
+    rotationSpeed,
+    m_limelight.getDebugString()
+  ));
   }
 
   @Override
@@ -93,9 +93,9 @@ public class LimelightAlignCommand extends Command {
     m_drive.drive(0, 0, 0, false);
     
     if (interrupted) {
-      System.out.println("[LimelightAlignCommand] Alignment interrupted");
+      SmartDashboard.putString(Constants.LimelightConstants.kDashboardStatusKey, "[LimelightAlignCommand] Alignment interrupted");
     } else {
-      System.out.println("[LimelightAlignCommand] Alignment complete");
+      SmartDashboard.putString(Constants.LimelightConstants.kDashboardStatusKey, "[LimelightAlignCommand] Alignment complete");
     }
   }
 

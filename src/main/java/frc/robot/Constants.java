@@ -127,6 +127,8 @@ public final class Constants {
     
     // RPM tolerance for speed control (±RPM)
     public static final double kShooterRpmTolerance = 200.0;
+  // Hysteresis margin (RPM) to prevent feeder chatter on transient dips
+  public static final double kShooterRpmHysteresis = 50.0;
     
     // PID tuning parameters for SparkFlex internal controller (flywheel only)
     public static final double kShooterFlexP = 0.0005;
@@ -161,5 +163,36 @@ public final class Constants {
     
     // Max angular velocity during alignment (rad/s)
     public static final double kMaxAlignmentAngularVelocity = 2.0;
+
+  // Dashboard keys for Limelight telemetry
+  public static final String kDashboardPrefix = "Limelight/";
+  public static final String kDashboardTargetTagIdKey = kDashboardPrefix + "Target Tag ID";
+  public static final String kDashboardHasTargetKey = kDashboardPrefix + "Has Target";
+  public static final String kDashboardTargetIdKey = kDashboardPrefix + "Target ID";
+  public static final String kDashboardHasDesiredKey = kDashboardPrefix + "Has Desired Target";
+  public static final String kDashboardOffsetXKey = kDashboardPrefix + "Offset X (deg)";
+  public static final String kDashboardOffsetYKey = kDashboardPrefix + "Offset Y (deg)";
+  public static final String kDashboardTargetAreaKey = kDashboardPrefix + "Target Area (%)";
+  public static final String kDashboardDistanceKey = kDashboardPrefix + "Distance to Target (m)";
+  public static final String kDashboardHorizontalDistanceKey = kDashboardPrefix + "Horizontal Distance (m)";
+  public static final String kDashboardRobotXKey = kDashboardPrefix + "Robot X (m)";
+  public static final String kDashboardRobotYKey = kDashboardPrefix + "Robot Y (m)";
+  public static final String kDashboardRobotHeadingKey = kDashboardPrefix + "Robot Heading (deg)";
+  public static final String kDashboardPipelineLatencyKey = kDashboardPrefix + "Pipeline Latency (ms)";
+  public static final String kDashboardActivePipelineKey = kDashboardPrefix + "Active Pipeline";
+
+  // General status/debug keys for Limelight
+  public static final String kDashboardStatusKey = kDashboardPrefix + "Status";
+  public static final String kDashboardDebugKey = kDashboardPrefix + "Debug";
+
+  // Subsystem telemetry keys
+  public static final String kShooterLastFlexSpeedKey = "Shooter/Last Flex Speed";
+  public static final String kShooterLastMaxSpeedKey = "Shooter/Last Max Speed";
+  public static final String kIntakeLastSpeedKey = "Intake/Last Speed";
+  public static final String kBeltLastSpeedKey = "Belt/Last Speed";
+
+  // Alliance-specific AprilTag IDs (change here if field targets differ)
+  public static final int kRedAllianceTargetTagID = 10;
+  public static final int kBlueAllianceTargetTagID = 26;
   }
 }

@@ -16,10 +16,16 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Belt;
 import frc.robot.subsystems.Limelight;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import frc.robot.commands.DriveDistanceCommand;
+import frc.robot.commands.TurnToAngleCommand;
+import frc.robot.commands.AutoCommandFactory;
 import frc.robot.commands.IntakeBeltCommand;
 import frc.robot.commands.ShooterBeltCommand;
 import frc.robot.commands.LimelightAlignCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
@@ -36,6 +42,9 @@ public class RobotContainer {
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
 
+  // Autonomous chooser
+  private final SendableChooser<Command> m_autoChooser = new SendableChooser<>();
+
   /**
    * The container for the robot. Contains subsystems, OI devices, and commands.
    */
@@ -43,6 +52,8 @@ public class RobotContainer {
     // Configure the button bindings
     configureButtonBindings();
     DriverStation.silenceJoystickConnectionWarning(true);
+
+    // Default commands for subsystems
     m_intake.setDefaultCommand(
       new RunCommand(() -> m_intake.setSpeed(0), m_intake)
     );
@@ -54,7 +65,7 @@ public class RobotContainer {
       }, m_shooter)
     );
 
-    // Configure default commands
+    // Configure default drive command (joystick control)
     m_robotDrive.setDefaultCommand(
         // The left stick controls translation of the robot.
         // Turning is controlled by the X axis of the right stick.
@@ -65,6 +76,25 @@ public class RobotContainer {
                 -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
                 true),
             m_robotDrive));
+
+    // Autonomous chooser: expose a few options on the dashboard
+    // Default: original simple 2 second drive
+    m_autoChooser.setDefaultOption("DriveForward 2s (default)",
+        Commands.waitSeconds(2).deadlineFor(new RunCommand(() -> m_robotDrive.drive(-0.6, 0.0, 0.0, false), m_robotDrive)));
+
+    // Drive back 1.5m only
+    m_autoChooser.addOption("Drive Back 1.5m", new DriveDistanceCommand(m_robotDrive, -1.5, 0.3));
+
+    // Turn left 45 degrees only
+    m_autoChooser.addOption("Turn Left 45°", new TurnToAngleCommand(m_robotDrive, 45.0));
+
+    // Full sequence: drive back, turn left, limelight align, shoot
+    m_autoChooser.addOption("DriveBack->TurnLeft->Aim->Shoot (45°)",
+        AutoCommandFactory.driveBackTurnAimShoot(m_robotDrive, m_limelight, m_shooter, m_belt, 45.0));
+
+    SmartDashboard.putData("Autonomous Mode", m_autoChooser);
+    // Build telemetry tab (elastic/list style) showing all important values
+    TelemetryLayout.setup(m_robotDrive, m_limelight, m_shooter, m_belt, m_intake);
   }
 
   /**
@@ -103,30 +133,7 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // Example autonomous routines using AutoCommandFactory:
-    
-    // Option 1: Simple drive forward
-    // return Commands.waitSeconds(2).deadlineFor(new RunCommand(
-    //   () -> m_robotDrive.drive(-0.6, 0.0, 0.0, false), m_robotDrive)
-    // );
-    
-    // Option 2: Shoot then intake (requires PathPlanner or trajectory following for movement)
-    // return AutoCommandFactory.shootThenIntake(m_shooter, m_belt, m_intake);
-    
-    // Option 3: Shoot while intaking in parallel
-    // return AutoCommandFactory.shootWhileIntaking(m_shooter, m_belt, m_intake);
-    
-    // TODO: Implement proper autonomous using PathPlanner or trajectory following
-    // For now, returns a simple command that drives forward for 2 seconds
-    return Commands.waitSeconds(2).deadlineFor(new RunCommand(
-      () -> {
-        m_robotDrive.drive(
-          -0.6,
-          0.0,
-          0.0,
-          false);
-      },
-      m_robotDrive)
-    );
+    // Return the selected autonomous command from the dashboard chooser
+    return m_autoChooser.getSelected();
   }
 }

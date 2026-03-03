@@ -1,5 +1,6 @@
 package frc.robot.commands;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants;
 import frc.robot.subsystems.Belt;
@@ -32,21 +33,33 @@ public class ShooterBeltCommand extends Command {
   public void initialize() {
     // Start flywheel using RPM control for consistent speed
     m_shooter.setShooterFlexRPM(Constants.ShooterConstants.kShooterTargetRPM);
-    // Start feeder wheel at fixed percent output
-    m_shooter.setShooterMaxSpeed(Constants.ShooterConstants.kFeederSpeed);
     m_beltStarted = false;
   }
 
   @Override
   public void execute() {
-    // Check if shooter has reached target RPM
-    if (!m_beltStarted
-        && m_shooter.isAtTargetRPM(
-            Constants.ShooterConstants.kShooterTargetRPM, kShooterRpmTolerance)) {
-      // Once shooter is at speed, engage the belt
+    // Gate feeding: use hysteresis to avoid rapid on/off if RPM briefly dips.
+    double target = Constants.ShooterConstants.kShooterTargetRPM;
+    double tolerance = kShooterRpmTolerance;
+    double hysteresis = Constants.ShooterConstants.kShooterRpmHysteresis;
+
+    double rpmError = Math.abs(m_shooter.getFlexRPM() - target);
+
+    // Start feeding when within tolerance. Stop only when error exceeds tolerance + hysteresis.
+    if (!m_beltStarted && rpmError <= tolerance) {
+      // Flywheel is up to speed — enable feeder and belt
+      m_shooter.setShooterMaxSpeed(Constants.ShooterConstants.kFeederSpeed);
       m_belt.setSpeed(Constants.BeltConstants.kBeltSpeed);
       m_beltStarted = true;
+    } else if (m_beltStarted && rpmError > (tolerance + hysteresis)) {
+      // Flywheel dropped well below target — stop feeding to avoid jams/misfires
+      m_shooter.setShooterMaxSpeed(0);
+      m_belt.setSpeed(0);
+      m_beltStarted = false;
     }
+
+    // Publish feeder state for dashboard/driver visibility
+    SmartDashboard.putBoolean("Shooter/FeederEnabled", m_beltStarted);
   }
 
   @Override
