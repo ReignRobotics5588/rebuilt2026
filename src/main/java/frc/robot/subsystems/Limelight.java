@@ -126,8 +126,13 @@ public class Limelight extends SubsystemBase {
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, m_targetOffsetX);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, m_targetOffsetY);
     double[] poseRelative = getRobotPoseRelativeToTarget();
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, poseRelative[0]);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, poseRelative[1]);
+    if (poseRelative != null && poseRelative.length >= 2) {
+      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, poseRelative[0]);
+      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, poseRelative[1]);
+    } else {
+      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
+      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, 0.0);
+    }
   }
 
   /**
@@ -239,7 +244,10 @@ public class Limelight extends SubsystemBase {
    */
   public double getDistanceToTarget() {
     double[] poseRelativeToTarget = getRobotPoseRelativeToTarget();
-    return poseRelativeToTarget[0];  // X component is distance forward
+    if (poseRelativeToTarget != null && poseRelativeToTarget.length > 0) {
+      return poseRelativeToTarget[0];  // X component is distance forward
+    }
+    return 0.0;
   }
 
   /**
@@ -248,7 +256,10 @@ public class Limelight extends SubsystemBase {
    */
   public double getHorizontalDistanceToTarget() {
     double[] poseRelativeToTarget = getRobotPoseRelativeToTarget();
-    return poseRelativeToTarget[1];  // Y component
+    if (poseRelativeToTarget != null && poseRelativeToTarget.length > 1) {
+      return poseRelativeToTarget[1];  // Y component
+    }
+    return 0.0;
   }
 
   /**
@@ -308,12 +319,13 @@ public class Limelight extends SubsystemBase {
     }
     
     double[] poseRelative = getRobotPoseRelativeToTarget();
+    double distance = (poseRelative != null && poseRelative.length > 0) ? poseRelative[0] : 0.0;
     return String.format(
         "[Limelight] ID:%d | Offset:(%.1f°, %.1f°) | Dist:%.2fm | Area:%.1f%%",
         m_targetID, 
         m_targetOffsetX, 
         m_targetOffsetY, 
-        poseRelative[0],
+        distance,
         getTargetArea()
     );
   }
