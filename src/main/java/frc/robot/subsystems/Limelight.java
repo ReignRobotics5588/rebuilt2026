@@ -1,42 +1,34 @@
 package frc.robot.subsystems;
 
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.LimelightHelpers;
+import frc.robot.LimelightHelpers.PoseEstimate;
+import frc.robot.LimelightHelpers.RawFiducial;
 
 /**
  * Limelight 2 vision subsystem for April tag detection and robot localization.
+ * Uses the official LimelightHelpers library for reliable vision integration.
  * Provides methods for getting robot pose, April tag information, and alignment data.
- * 
- * Network Table entries for Limelight:
- * - tx: Horizontal offset from cross-hair to target (-27 to 27 degrees)
- * - ty: Vertical offset from cross-hair to target (-20.5 to 20.5 degrees)
- * - ta: Target area (0% to 100% of image)
- * - tl: Pipeline latency in milliseconds
- * - tid: ID of detected April tag
- * - botpose: [x, y, z, roll, pitch, yaw] - robot pose in field coordinates
- * - botpose_targetspace: Robot pose relative to target
- * - camerapose_targetspace: Camera pose relative to target
- * - targetpose_cameraspace: Target pose relative to camera
  */
 public class Limelight extends SubsystemBase {
-  private NetworkTable m_limelightTable;
+  private final String m_limelightName;
   private boolean m_hasTarget = false;
   private double m_targetOffsetX = 0.0;
   private double m_targetOffsetY = 0.0;
   private int m_targetID = -1;
   private int m_desiredTagID = -1;  // -1 means any tag
+  private PoseEstimate m_latestPoseEstimate = new PoseEstimate();
 
   public Limelight() {
-    // Initialize network table connection to Limelight
-    m_limelightTable = NetworkTableInstance.getDefault()
-        .getTable(Constants.LimelightConstants.kLimelightTableName);
+    m_limelightName = Constants.LimelightConstants.kLimelightTableName;
     
     // Set to AprilTag pipeline
-    setPipeline(Constants.LimelightConstants.kAprilTagPipeline);
+    LimelightHelpers.setPipelineIndex(m_limelightName, Constants.LimelightConstants.kAprilTagPipeline);
+
+    LimelightHelpers.setLEDMode_ForceOff(m_limelightName);
     
     // Initialize dashboard
     initializeDashboard();
@@ -76,19 +68,51 @@ public class Limelight extends SubsystemBase {
   }
 
   /**
-   * Updates target detection data from Limelight
+   * Updates target detection data from Limelight using the official LimelightHelpers
    */
   private void updateTargetData() {
-    // Check if we have a valid target (tv = 1 if target detected)
-    m_hasTarget = m_limelightTable.getEntry("tv").getDouble(0) == 1.0;
+    // Get the latest pose estimate based on alliance color
+    String allianceName = DriverStation.getAlliance().map(Enum::name).orElse("Invalid");
+    PoseEstimate poseEst;
     
-    if (m_hasTarget) {
-      // Get horizontal and vertical offsets to target
-      m_targetOffsetX = m_limelightTable.getEntry("tx").getDouble(0.0);
-      m_targetOffsetY = m_limelightTable.getEntry("ty").getDouble(0.0);
+    if ("RED".equalsIgnoreCase(allianceName)) {
+      poseEst = LimelightHelpers.getBotPoseEstimate_wpiRed(m_limelightName);
+    } else if ("BLUE".equalsIgnoreCase(allianceName)) {
+      poseEst = LimelightHelpers.getBotPoseEstimate_wpiBlue(m_limelightName);
+    } else {
+      // Fall back to generic pose estimate
+      poseEst = LimelightHelpers.getBotPoseEstimate_wpiBlue(m_limelightName);
+    }
+    
+    m_latestPoseEstimate = poseEst;
+    
+    // Check if we have valid targets using official helpers
+    m_hasTarget = LimelightHelpers.getTV(m_limelightName);
+    
+    if (m_hasTarget && poseEst.rawFiducials != null && poseEst.rawFiducials.length > 0) {
+      // Use the first (best) fiducial detected
+      RawFiducial primaryFiducial = poseEst.rawFiducials[0];
+      m_targetID = primaryFiducial.id;
+      m_targetOffsetX = primaryFiducial.txnc;
+      m_targetOffsetY = primaryFiducial.tync;
       
-      // Get detected April tag ID
-      m_targetID = (int) m_limelightTable.getEntry("tid").getDouble(-1);
+      // If desired tag is set, check if this is the one we want
+      if (m_desiredTagID != -1 && m_targetID != m_desiredTagID) {
+        // Look for the desired tag among all detected fiducials
+        for (RawFiducial fid : poseEst.rawFiducials) {
+          if (fid.id == m_desiredTagID) {
+            m_targetID = (int) fid.id;
+            m_targetOffsetX = fid.txnc;
+            m_targetOffsetY = fid.tync;
+            break;
+          }
+        }
+      }
+    } else {
+      m_hasTarget = false;
+      m_targetID = -1;
+      m_targetOffsetX = 0.0;
+      m_targetOffsetY = 0.0;
     }
   }
 
@@ -172,7 +196,7 @@ public class Limelight extends SubsystemBase {
    * @return area percentage (0-100)
    */
   public double getTargetArea() {
-    return m_limelightTable.getEntry("ta").getDouble(0.0);
+    return LimelightHelpers.getTA(m_limelightName);
   }
 
   /**
@@ -180,7 +204,7 @@ public class Limelight extends SubsystemBase {
    * @return latency including capture and processing
    */
   public double getPipelineLatency() {
-    return m_limelightTable.getEntry("tl").getDouble(0.0);
+    return LimelightHelpers.getLatency_Pipeline(m_limelightName);
   }
 
   /**
@@ -189,8 +213,7 @@ public class Limelight extends SubsystemBase {
    * @return array of [x(m), y(m), z(m), roll(deg), pitch(deg), yaw(deg)], or zeros if no target
    */
   public double[] getRobotPose() {
-    double[] poseArray = m_limelightTable.getEntry("botpose").getDoubleArray(new double[6]);
-    return poseArray.length == 6 ? poseArray : new double[6];
+    return LimelightHelpers.getBotPose(m_limelightName);
   }
 
   /**
@@ -199,9 +222,7 @@ public class Limelight extends SubsystemBase {
    * @return array of [x(m), y(m), z(m), roll(deg), pitch(deg), yaw(deg)]
    */
   public double[] getRobotPoseRelativeToTarget() {
-    double[] poseArray = m_limelightTable.getEntry("botpose_targetspace")
-        .getDoubleArray(new double[6]);
-    return poseArray.length == 6 ? poseArray : new double[6];
+    return LimelightHelpers.getBotPose_TargetSpace(m_limelightName);
   }
 
   /**
@@ -209,9 +230,7 @@ public class Limelight extends SubsystemBase {
    * @return array of [x(m), y(m), z(m), roll(deg), pitch(deg), yaw(deg)]
    */
   public double[] getCameraPoseRelativeToTarget() {
-    double[] poseArray = m_limelightTable.getEntry("camerapose_targetspace")
-        .getDoubleArray(new double[6]);
-    return poseArray.length == 6 ? poseArray : new double[6];
+    return LimelightHelpers.getCameraPose_TargetSpace(m_limelightName);
   }
 
   /**
@@ -237,7 +256,7 @@ public class Limelight extends SubsystemBase {
    * @param pipeline pipeline ID (0 = default AprilTag)
    */
   public void setPipeline(int pipeline) {
-    m_limelightTable.getEntry("pipeline").setNumber(pipeline);
+    LimelightHelpers.setPipelineIndex(m_limelightName, pipeline);
   }
 
   /**
@@ -245,7 +264,7 @@ public class Limelight extends SubsystemBase {
    * @return pipeline ID
    */
   public int getPipeline() {
-    return (int) m_limelightTable.getEntry("pipeline").getDouble(0);
+    return (int) LimelightHelpers.getCurrentPipelineIndex(m_limelightName);
   }
 
   /**
@@ -254,27 +273,35 @@ public class Limelight extends SubsystemBase {
    */
   public void setLimelightActive(boolean enabled) {
     // LED mode: 0 = pipeline default, 1 = force off, 2 = force blink, 3 = force on
-    m_limelightTable.getEntry("ledMode").setNumber(enabled ? 0 : 1);
+    if (enabled) {
+      LimelightHelpers.setLEDMode_PipelineControl(m_limelightName);
+    } else {
+      LimelightHelpers.setLEDMode_ForceOff(m_limelightName);
+    }
   }
 
   /**
    * Force Limelight LED on
    */
   public void ledOn() {
-    m_limelightTable.getEntry("ledMode").setNumber(3);
+    LimelightHelpers.setLEDMode_ForceOn(m_limelightName);
   }
 
   /**
    * Force Limelight LED off
    */
   public void ledOff() {
-    m_limelightTable.getEntry("ledMode").setNumber(1);
+    LimelightHelpers.setLEDMode_ForceOff(m_limelightName);
   }
 
   /**
-   * Get debug string with current vision data
-   * @return formatted string with target info
+   * Get the latest pose estimate from the Limelight including timestamp and tag count
+   * Useful for integrating with robot odometry and pose estimation
+   * @return PoseEstimate object with pose, latency, timestamp, and raw fiducials
    */
+  public PoseEstimate getLatestPoseEstimate() {
+    return m_latestPoseEstimate;
+  }
   public String getDebugString() {
     if (!m_hasTarget) {
       return "[Limelight] No target detected";

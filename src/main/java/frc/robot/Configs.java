@@ -64,33 +64,33 @@ public final class Configs {
         }
 
     }
-    public static final class shooterFlex {
-        public static final SparkFlexConfig shooterFlex_config = new SparkFlexConfig();
+    public static final class flywheel {
+        public static final SparkFlexConfig flywheel_config = new SparkFlexConfig();
 
         static {
-            shooterFlex_config
-                    .idleMode(IdleMode.kBrake)
+            flywheel_config
+                    .idleMode(IdleMode.kCoast)
                     .smartCurrentLimit(40);
             
             // Configure PID for velocity control using the internal encoder
-            shooterFlex_config.encoder
+            flywheel_config.encoder
                     .velocityConversionFactor(1.0); // Default is 1 RPM per tick
             
-            shooterFlex_config.closedLoop
+            flywheel_config.closedLoop
                     .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-                    .pid(Constants.ShooterConstants.kShooterFlexP,
-                         Constants.ShooterConstants.kShooterFlexI,
-                         Constants.ShooterConstants.kShooterFlexD)
+                    .pid(Constants.ShooterConstants.kFlywheelP,
+                         Constants.ShooterConstants.kFlywheelI,
+                         Constants.ShooterConstants.kFlywheelD)
                     .outputRange(-1.0, 1.0);
         }
     
 }
 
- public static final class shooterMax {
-        public static final SparkMaxConfig shooterMax_config = new SparkMaxConfig();
+ public static final class indexer {
+        public static final SparkMaxConfig indexer_config = new SparkMaxConfig();
 
         static {
-            shooterMax_config
+            indexer_config
                     .idleMode(IdleMode.kBrake)
                     .smartCurrentLimit(40);
         }

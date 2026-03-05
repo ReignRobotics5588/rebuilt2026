@@ -48,14 +48,14 @@ public final class TelemetryLayout {
         .withSize(3, 7)
         .withPosition(3, 0);
 
-    sh.addNumber("Flex RPM", shooter::getFlexRPM);
-    sh.addNumber("Flex Target RPM", shooter::getDashboardTargetRPM);
-    sh.addNumber("Flex Output %", () -> 0.0); // kept placeholder (controller output not exposed)
+    sh.addNumber("Flywheel RPM", shooter::getFlywheelRPM);
+    sh.addNumber("Flywheel Target RPM", shooter::getDashboardTargetRPM);
+    sh.addNumber("Flywheel Output %", () -> 0.0); // kept placeholder (controller output not exposed)
     sh.addBoolean("At Target RPM", () -> shooter.isAtTargetRPM(shooter.getDashboardTargetRPM(), frc.robot.Constants.ShooterConstants.kShooterRpmTolerance));
-    sh.addNumber("RPM Error", () -> shooter.getFlexRPM() - shooter.getDashboardTargetRPM());
-    sh.addNumber("Max RPM", shooter::getMaxRPM);
-    sh.addNumber("Feeder Last Flex Speed", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber(Constants.LimelightConstants.kShooterLastFlexSpeedKey, 0.0));
-    sh.addNumber("Feeder Last Max Speed", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber(Constants.LimelightConstants.kShooterLastMaxSpeedKey, 0.0));
+    sh.addNumber("RPM Error", () -> shooter.getFlywheelRPM() - shooter.getDashboardTargetRPM());
+    sh.addNumber("Indexer RPM", shooter::getIndexerRPM);
+    sh.addNumber("Feeder Last Flywheel Speed", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber(Constants.LimelightConstants.kShooterLastFlexSpeedKey, 0.0));
+    sh.addNumber("Feeder Last Indexer Speed", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber(Constants.LimelightConstants.kShooterLastMaxSpeedKey, 0.0));
 
     // Intake / Belt layout
     ShuffleboardLayout feed = tab.getLayout("Intake/Belt", BuiltInLayouts.kList)
@@ -81,9 +81,9 @@ public final class TelemetryLayout {
         .withPosition(3, 7);
 
     misc.addNumber("Shooter/Target RPM", shooter::getDashboardTargetRPM);
-    misc.addNumber("Shooter/PID P", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber("Shooter/PID P Gain", Constants.ShooterConstants.kShooterFlexP));
-    misc.addNumber("Shooter/PID I", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber("Shooter/PID I Gain", Constants.ShooterConstants.kShooterFlexI));
-    misc.addNumber("Shooter/PID D", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber("Shooter/PID D Gain", Constants.ShooterConstants.kShooterFlexD));
+    misc.addNumber("Shooter/PID P", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber("Shooter/PID P Gain", Constants.ShooterConstants.kFlywheelP));
+    misc.addNumber("Shooter/PID I", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber("Shooter/PID I Gain", Constants.ShooterConstants.kFlywheelI));
+    misc.addNumber("Shooter/PID D", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber("Shooter/PID D Gain", Constants.ShooterConstants.kFlywheelD));
     misc.addNumber("Pipeline Latency (ms)", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getNumber(Constants.LimelightConstants.kDashboardPipelineLatencyKey, 0.0));
     misc.addString("Vision Status", () -> edu.wpi.first.wpilibj.smartdashboard.SmartDashboard.getString(Constants.LimelightConstants.kDashboardStatusKey, ""));
 

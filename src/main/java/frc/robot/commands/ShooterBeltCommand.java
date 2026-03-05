@@ -32,7 +32,7 @@ public class ShooterBeltCommand extends Command {
   @Override
   public void initialize() {
     // Start flywheel using RPM control for consistent speed
-    m_shooter.setShooterFlexRPM(Constants.ShooterConstants.kShooterTargetRPM);
+    m_shooter.setFlywheelRPM(Constants.ShooterConstants.kShooterTargetRPM);
     m_beltStarted = false;
   }
 
@@ -43,17 +43,17 @@ public class ShooterBeltCommand extends Command {
     double tolerance = kShooterRpmTolerance;
     double hysteresis = Constants.ShooterConstants.kShooterRpmHysteresis;
 
-    double rpmError = Math.abs(m_shooter.getFlexRPM() - target);
+    double rpmError = Math.abs(m_shooter.getFlywheelRPM() - target);
 
     // Start feeding when within tolerance. Stop only when error exceeds tolerance + hysteresis.
     if (!m_beltStarted && rpmError <= tolerance) {
       // Flywheel is up to speed — enable feeder and belt
-      m_shooter.setShooterMaxSpeed(Constants.ShooterConstants.kFeederSpeed);
+      m_shooter.setIndexerSpeed(Constants.ShooterConstants.kFeederSpeed);
       m_belt.setSpeed(Constants.BeltConstants.kBeltSpeed);
       m_beltStarted = true;
     } else if (m_beltStarted && rpmError > (tolerance + hysteresis)) {
       // Flywheel dropped well below target — stop feeding to avoid jams/misfires
-      m_shooter.setShooterMaxSpeed(0);
+      m_shooter.setIndexerSpeed(0);
       m_belt.setSpeed(0);
       m_beltStarted = false;
     }
@@ -65,8 +65,8 @@ public class ShooterBeltCommand extends Command {
   @Override
   public void end(boolean interrupted) {
     // Stop all motors using percent output (0 RPM via setSpeed)
-    m_shooter.setShooterFlexSpeed(0);
-    m_shooter.setShooterMaxSpeed(0);
+    m_shooter.setFlywheelSpeed(0);
+    m_shooter.setIndexerSpeed(0);
     m_belt.setSpeed(0);
   }
 

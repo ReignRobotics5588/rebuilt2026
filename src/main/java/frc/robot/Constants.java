@@ -62,8 +62,8 @@ public final class Constants {
     public static final int intakeID = 10;
     public static final int beltID = 14;
     
-    public static final int shooterFlexID = 12;
-    public static final int shooterMaxID = 13;
+    public static final int flywheelID = 12;
+    public static final int indexerID = 13;
     
   }
 
@@ -131,10 +131,10 @@ public final class Constants {
   public static final double kShooterRpmHysteresis = 50.0;
     
     // PID tuning parameters for SparkFlex internal controller (flywheel only)
-    public static final double kShooterFlexP = 0.0005;
-    public static final double kShooterFlexI = 0.0;
-    public static final double kShooterFlexD = 0.0;
-    public static final double kShooterFlexFF = 0.000156;
+    public static final double kFlywheelP = 0.0005;
+    public static final double kFlywheelI = 0.0;
+    public static final double kFlywheelD = 0.0;
+    public static final double kFlywheelFF = 0.000156;
   }
 
   public static final class LimelightConstants {

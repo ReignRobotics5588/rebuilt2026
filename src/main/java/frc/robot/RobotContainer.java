@@ -60,8 +60,8 @@ public class RobotContainer {
 
     m_shooter.setDefaultCommand(
       new RunCommand(() -> {
-        m_shooter.setShooterFlexSpeed(0);
-        m_shooter.setShooterMaxSpeed(0);
+        m_shooter.setFlywheelSpeed(0);
+        m_shooter.setIndexerSpeed(0);
       }, m_shooter)
     );
 
@@ -124,7 +124,7 @@ public class RobotContainer {
     
     // Old individual button bindings (kept for reference - remove if no longer needed)
     // new JoystickButton(m_driverController, XboxController.Button.kB.value).toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(Constants.BeltConstants.kBeltSpeed), m_intake));
-    // new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value).toggleOnTrue(new RunCommand(() -> m_shooter.setShooterMaxSpeed(Constants.ShooterConstants.kShooterSpeed), m_shooter));
+    // new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value).toggleOnTrue(new RunCommand(() -> m_shooter.setIndexerSpeed(Constants.ShooterConstants.kShooterSpeed), m_shooter));
   }
 
   /**
