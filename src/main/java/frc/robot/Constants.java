@@ -25,7 +25,7 @@ public final class Constants {
   public static final class DriveConstants {
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
-    public static final double kMaxSpeedMetersPerSecond = 4.8;
+    public static final double kMaxSpeedMetersPerSecond = 6.5;
     public static final double kMaxAngularSpeed = 2 * Math.PI; // radians per second
 
     // Chassis configuration
@@ -109,10 +109,10 @@ public final class Constants {
     public static final double kFreeSpeedRpm = 5676;
   }
   public static final class IntakeConstants {
-    public static final double kIntakeSpeed = 0.5;
+    public static final double kIntakeSpeed = -.9;
   }
   public static final class BeltConstants {
-    public static final double kBeltSpeed = 0.33;
+    public static final double kBeltSpeed = -0.4;
   }
 
   public static final class ShooterConstants {
@@ -120,10 +120,10 @@ public final class Constants {
     public static final double kShooterSpeed = 0.5;
     
     // Feeder wheel speed (percent output)
-    public static final double kFeederSpeed = 0.5;
+    public static final double kFeederSpeed = 0.75;
     
     // Target RPM for shooter flywheel (SparkFlex)
-    public static final double kShooterTargetRPM = 3000.0;
+    public static final double kShooterTargetRPM = 2000.0;
     
     // RPM tolerance for speed control (±RPM)
     public static final double kShooterRpmTolerance = 200.0;

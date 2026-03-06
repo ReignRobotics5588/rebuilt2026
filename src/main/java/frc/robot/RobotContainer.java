@@ -114,9 +114,19 @@ public class RobotContainer {
     new JoystickButton(m_driverController, XboxController.Button.kA.value)
         .toggleOnTrue(new IntakeBeltCommand(m_intake, m_belt));
     
-    // Shooter + Belt: Shooter ramps to speed first, then belt engages
+/*     // Shooter + Belt: Shooter ramps to speed first, then belt engages
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
         .toggleOnTrue(new ShooterBeltCommand(m_shooter, m_belt));
+*/
+
+    // Flywheel at 50%, wait 2s, then run indexer at constants speed
+    new JoystickButton(m_driverController, XboxController.Button.kY.value)
+        .toggleOnTrue(Commands.sequence(
+            new RunCommand(() -> m_shooter.setFlywheelSpeed(0.5), m_shooter).withTimeout(2.5),
+            new RunCommand(() -> m_shooter.setIndexerSpeed(Constants.ShooterConstants.kFeederSpeed), m_shooter)
+        ));
+
+
     
     // Limelight vision alignment: Align to detected April tag
     new JoystickButton(m_driverController, XboxController.Button.kB.value)

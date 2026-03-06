@@ -32,7 +32,8 @@ public class ShooterBeltCommand extends Command {
   @Override
   public void initialize() {
     // Start flywheel using RPM control for consistent speed
-    m_shooter.setFlywheelRPM(Constants.ShooterConstants.kShooterTargetRPM);
+    //m_shooter.setFlywheelRPM(Constants.ShooterConstants.kShooterTargetRPM);
+    m_shooter.setFlywheelSpeed(0.75);
     m_beltStarted = false;
   }
 

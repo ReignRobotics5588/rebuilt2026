@@ -161,7 +161,8 @@ public class Shooter extends SubsystemBase {
   public void setFlywheelRPM(double targetRPM) {
     m_targetRPM = targetRPM;
     // Use the setSetpoint method with kVelocity control type
-    m_flywheelPIDController.setSetpoint(targetRPM, com.revrobotics.spark.SparkBase.ControlType.kVelocity);
+   // m_flywheelPIDController.setSetpoint(targetRPM, com.revrobotics.spark.SparkBase.ControlType.kVelocity);
+    m_flywheel.setVoltage(.75);
   }
 
   /**
