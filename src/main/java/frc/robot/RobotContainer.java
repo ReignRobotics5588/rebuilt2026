@@ -78,9 +78,9 @@ public class RobotContainer {
             m_robotDrive));
 
     // Autonomous chooser: expose a few options on the dashboard
-    // Default: original simple 2 second drive
-    m_autoChooser.setDefaultOption("DriveForward 2s (default)",
-        Commands.waitSeconds(2).deadlineFor(new RunCommand(() -> m_robotDrive.drive(-0.6, 0.0, 0.0, false), m_robotDrive)));
+    // Default: do nothing
+    m_autoChooser.setDefaultOption("Do Nothing (default)",
+        Commands.none());
 
     // Drive back 1.5m only
     m_autoChooser.addOption("Drive Back 1.5m", new DriveDistanceCommand(m_robotDrive, -1.5, 0.3));
