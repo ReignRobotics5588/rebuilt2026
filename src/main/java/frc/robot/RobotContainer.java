@@ -114,6 +114,10 @@ public class RobotContainer {
     new JoystickButton(m_driverController, XboxController.Button.kA.value)
         .toggleOnTrue(new IntakeBeltCommand(m_intake, m_belt));
     
+    // Spit out command: Run intake in reverse at 0.7 power
+    new JoystickButton(m_driverController, XboxController.Button.kLeftBumper.value)
+        .toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(-0.7), m_intake));
+    
 /*     // Shooter + Belt: Shooter ramps to speed first, then belt engages
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
         .toggleOnTrue(new ShooterBeltCommand(m_shooter, m_belt));

@@ -1,6 +1,7 @@
 package frc.robot.commands;
 
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Constants;
 import frc.robot.subsystems.Belt;
 import frc.robot.subsystems.Intake;
@@ -29,6 +30,7 @@ public class IntakeBeltCommand extends Command {
   public void initialize() {
     m_intake.setSpeed(Constants.IntakeConstants.kIntakeSpeed);
     m_belt.setSpeed(Constants.BeltConstants.kBeltSpeed);
+    SmartDashboard.putBoolean("Intake On", true);
   }
 
   @Override
@@ -40,6 +42,7 @@ public class IntakeBeltCommand extends Command {
   public void end(boolean interrupted) {
     m_intake.setSpeed(0);
     m_belt.setSpeed(0);
+    SmartDashboard.putBoolean("Intake On", false);
   }
 
   @Override
