@@ -2,18 +2,32 @@ package frc.robot.subsystems;
 
 import com.revrobotics.PersistMode;
 import com.revrobotics.spark.SparkClosedLoopController;
-import com.revrobotics.spark.config.SparkFlexConfig;
+import com.revrobotics.spark.SparkBase.ControlType;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel;
-import com.revrobotics.spark.FeedbackSensor;
 import frc.robot.Constants;
-
 import frc.robot.Configs;
 import com.revrobotics.ResetMode;
 
+/**
+ * Shooter subsystem that controls the flywheel and indexer motors.
+ * 
+ * The flywheel uses closed-loop velocity control (PID) to maintain target RPM.
+ * The indexer (feeder wheel) is controlled via percent output.
+ * 
+ * This simplified implementation follows REV Robotics best practices and removes
+ * unnecessary complexity from the original version.
+ * 
+ * Key improvements:
+ * - Removed complex dashboard PID tuning loop
+ * - Fixed setFlywheelRPM() to actually use PID control via setReference()
+ * - Simplified from 208 lines to ~120 lines
+ * - Uses REV Robotics standard patterns for velocity control
+ * - Reduced telemetry to essential values only
+ */
 public class Shooter extends SubsystemBase {
 
   private final SparkFlex m_flywheel = new SparkFlex(Constants.DriveConstants.flywheelID,
@@ -23,146 +37,73 @@ public class Shooter extends SubsystemBase {
   private final SparkClosedLoopController m_flywheelPIDController = m_flywheel.getClosedLoopController();
 
   private double m_targetRPM = 0.0;
-  private double m_flywheelOutputPercent = 0.0;
   private double m_indexerOutputPercent = 0.0;
-  private double m_lastFlywheelSpeed = 0.0;
-  private double m_lastIndexerSpeed = 0.0;
-
-  // PID tuning values from dashboard
-  private double m_dashboardP = Constants.ShooterConstants.kFlywheelP;
-  private double m_dashboardI = Constants.ShooterConstants.kFlywheelI;
-  private double m_dashboardD = Constants.ShooterConstants.kFlywheelD;
-  private double m_dashboardFF = Constants.ShooterConstants.kFlywheelFF;
-  private double m_dashboardTargetRPM = Constants.ShooterConstants.kShooterTargetRPM;
 
   public Shooter() {
+    // Configure flywheel with PID-based velocity control
     m_flywheel.configure(Configs.flywheel.flywheel_config, ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
+    
+    // Configure indexer for simple percent output control
     m_indexer.configure(Configs.indexer.indexer_config, ResetMode.kResetSafeParameters,
         PersistMode.kPersistParameters);
-
-    // Initialize dashboard with current PID values
-    initializeDashboard();
-  }
-
-  /**
-   * Initialize dashboard with default PID values and RPM target
-   */
-  private void initializeDashboard() {
-    SmartDashboard.putNumber("Shooter/PID P Gain", Constants.ShooterConstants.kFlywheelP);
-    SmartDashboard.putNumber("Shooter/PID I Gain", Constants.ShooterConstants.kFlywheelI);
-    SmartDashboard.putNumber("Shooter/PID D Gain", Constants.ShooterConstants.kFlywheelD);
-    SmartDashboard.putNumber("Shooter/PID FF Gain", Constants.ShooterConstants.kFlywheelFF);
-    SmartDashboard.putNumber("Shooter/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
-    SmartDashboard.putNumber("Shooter/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
   }
 
   @Override
   public void periodic() {
-    // Check for PID changes from dashboard
-    checkAndApplyPIDChanges();
-
-    // Update target RPM from dashboard
-    m_dashboardTargetRPM = SmartDashboard.getNumber("Shooter/Target RPM", m_dashboardTargetRPM);
-
-    // Update telemetry data for Glass
+    // Update telemetry data
     updateTelemetry();
   }
 
   /**
-   * Check if PID values changed on dashboard and apply them to the motor
-   * controller
-   */
-  private void checkAndApplyPIDChanges() {
-    double newP = SmartDashboard.getNumber("Shooter/PID P Gain", m_dashboardP);
-    double newI = SmartDashboard.getNumber("Shooter/PID I Gain", m_dashboardI);
-    double newD = SmartDashboard.getNumber("Shooter/PID D Gain", m_dashboardD);
-    double newFF = SmartDashboard.getNumber("Shooter/PID FF Gain", m_dashboardFF);
-
-    // Check if any value changed
-    if (newP != m_dashboardP || newI != m_dashboardI || newD != m_dashboardD || newFF != m_dashboardFF) {
-      m_dashboardP = newP;
-      m_dashboardI = newI;
-      m_dashboardD = newD;
-      m_dashboardFF = newFF;
-
-      // Create new config with updated PID values
-      SparkFlexConfig updatedConfig = new SparkFlexConfig();
-      updatedConfig
-          .idleMode(com.revrobotics.spark.config.SparkBaseConfig.IdleMode.kBrake)
-          .smartCurrentLimit(40);
-
-      updatedConfig.encoder
-          .velocityConversionFactor(1.0);
-
-      updatedConfig.closedLoop
-          .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-          .pid(m_dashboardP, m_dashboardI, m_dashboardD)
-          .outputRange(-1.0, 1.0);
-
-      // Apply new configuration
-      m_flywheel.configure(updatedConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-
-      SmartDashboard.putString("Shooter/Status", String.format(
-          "[Shooter] PID Updated: P=%.6f, I=%.6f, D=%.6f, FF=%.6f",
-          m_dashboardP, m_dashboardI, m_dashboardD, m_dashboardFF));
-    }
-  }
-
-  /**
-   * Send telemetry data to SmartDashboard/Glass for PID shooter monitoring
+   * Send essential telemetry data to SmartDashboard for monitoring
    */
   private void updateTelemetry() {
-    // Flywheel (PID-controlled)
+    // Flywheel feedback
     SmartDashboard.putNumber("Shooter/Flywheel RPM", getFlywheelRPM());
-    SmartDashboard.putNumber("Shooter/Flywheel Target RPM", m_targetRPM);
-    SmartDashboard.putNumber("Shooter/Flywheel Output %", m_flywheelOutputPercent);
+    SmartDashboard.putNumber("Shooter/Target RPM", m_targetRPM);
+    SmartDashboard.putNumber("Shooter/RPM Error", getFlywheelRPM() - m_targetRPM);
     SmartDashboard.putBoolean("Shooter/At Target RPM",
         isAtTargetRPM(m_targetRPM, Constants.ShooterConstants.kShooterRpmTolerance));
-    SmartDashboard.putNumber("Shooter/RPM Error",
-        getFlywheelRPM() - m_targetRPM);
-
-    // Indexer (feeder wheel)
-    SmartDashboard.putNumber("Shooter/Indexer RPM", getIndexerRPM());
-    SmartDashboard.putNumber("Shooter/Indexer Output %", m_indexerOutputPercent);
-    // Last commanded speeds
-    SmartDashboard.putNumber(Constants.LimelightConstants.kShooterLastFlexSpeedKey, m_lastFlywheelSpeed);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kShooterLastMaxSpeedKey, m_lastIndexerSpeed);
-
-    // Dashboard tuning values
-    SmartDashboard.putNumber("Shooter/Dashboard Target RPM", m_dashboardTargetRPM);
-
-    // Current PID values (read-only display in telemetry section)
-    SmartDashboard.putNumber("Shooter/Active P Gain", m_dashboardP);
-    SmartDashboard.putNumber("Shooter/Active I Gain", m_dashboardI);
-    SmartDashboard.putNumber("Shooter/Active D Gain", m_dashboardD);
-    SmartDashboard.putNumber("Shooter/Active FF Gain", m_dashboardFF);
-    SmartDashboard.putNumber("Shooter/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
-  }
-
-  public void setFlywheelSpeed(double speed) {
-    m_lastFlywheelSpeed = speed;
-    m_flywheelOutputPercent = speed;
-    m_flywheel.set(speed);
-  }
-
-  public void setIndexerSpeed(double speed) {
-    m_lastIndexerSpeed = speed;
-    m_indexerOutputPercent = speed;
-    m_indexer.set(speed);
   }
 
   /**
-   * Sets the SparkFlex shooter to a target RPM using the internal PID controller.
-   * This ensures the flywheel maintains consistent speed.
+   * Sets the flywheel to a target RPM using the internal PID controller.
+   * The SparkFlex will use closed-loop velocity control to maintain this RPM.
    *
    * @param targetRPM the target RPM for the flywheel
    */
   public void setFlywheelRPM(double targetRPM) {
     m_targetRPM = targetRPM;
-    // Use the setSetpoint method with kVelocity control type
-   // m_flywheelPIDController.setSetpoint(targetRPM, com.revrobotics.spark.SparkBase.ControlType.kVelocity);
-    m_flywheel.setVoltage(.75);
+    // Use setSetpoint with ControlType.kVelocity for PID-based RPM control
+    // The SparkFlex internal controller will automatically apply P, I, D, and FF gains
+    // This follows the REV Robotics standard pattern used in official examples
+    m_flywheelPIDController.setSetpoint(targetRPM, ControlType.kVelocity);
+  }
+
+  /**
+   * Sets the indexer (feeder wheel) to a percent output speed.
+   * Typical range: -1.0 to 1.0, where positive is forward.
+   *
+   * @param speed the percent output speed (-1.0 to 1.0)
+   */
+  public void setIndexerSpeed(double speed) {
+    m_indexerOutputPercent = speed;
+    m_indexer.set(speed);
+  }
+
+  /**
+   * Stops the flywheel by setting target RPM to 0.
+   */
+  public void stopFlywheel() {
+    setFlywheelRPM(0.0);
+  }
+
+  /**
+   * Stops the indexer.
+   */
+  public void stopIndexer() {
+    setIndexerSpeed(0.0);
   }
 
   /**
@@ -181,15 +122,6 @@ public class Shooter extends SubsystemBase {
    */
   public double getIndexerRPM() {
     return m_indexer.getEncoder().getVelocity();
-  }
-
-  /**
-   * Gets the target RPM from the dashboard (tunable during testing).
-   * 
-   * @return the dashboard target RPM
-   */
-  public double getDashboardTargetRPM() {
-    return m_dashboardTargetRPM;
   }
 
   /**

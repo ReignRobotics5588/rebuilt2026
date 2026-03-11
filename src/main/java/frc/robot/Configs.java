@@ -81,12 +81,13 @@ public final class Configs {
                     .pid(Constants.ShooterConstants.kFlywheelP,
                          Constants.ShooterConstants.kFlywheelI,
                          Constants.ShooterConstants.kFlywheelD)
-                    .outputRange(-1.0, 1.0);
+                    .outputRange(-1.0, 1.0)
+                    .feedForward
+                         .kV(Constants.ShooterConstants.kFlywheelFF / 12.0);  // Convert from volts to 1/12V
         }
-    
-}
+    }
 
- public static final class indexer {
+    public static final class indexer {
         public static final SparkMaxConfig indexer_config = new SparkMaxConfig();
 
         static {
@@ -94,8 +95,7 @@ public final class Configs {
                     .idleMode(IdleMode.kBrake)
                     .smartCurrentLimit(40);
         }
-    
-}
+    }
 
     public static final class belt {
 

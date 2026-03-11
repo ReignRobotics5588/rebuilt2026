@@ -60,8 +60,8 @@ public class RobotContainer {
 
     m_shooter.setDefaultCommand(
       new RunCommand(() -> {
-        m_shooter.setFlywheelSpeed(0);
-        m_shooter.setIndexerSpeed(0);
+        m_shooter.stopFlywheel();
+        m_shooter.stopIndexer();
       }, m_shooter)
     );
 
@@ -116,19 +116,16 @@ public class RobotContainer {
     
     // Spit out command: Run intake in reverse at 0.7 power
     new JoystickButton(m_driverController, XboxController.Button.kLeftBumper.value)
-        .toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(-0.7), m_intake));
+        .toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(-Constants.IntakeConstants.kIntakeSpeed), m_intake));
     
 /*     // Shooter + Belt: Shooter ramps to speed first, then belt engages
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
         .toggleOnTrue(new ShooterBeltCommand(m_shooter, m_belt));
 */
 
-    // Flywheel at 50%, wait 2s, then run indexer at constants speed
+    // Flywheel at target RPM, wait for it to reach target, then run indexer
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
-        .toggleOnTrue(Commands.sequence(
-            new RunCommand(() -> m_shooter.setFlywheelSpeed(0.5), m_shooter).withTimeout(2.5),
-            new RunCommand(() -> m_shooter.setIndexerSpeed(Constants.ShooterConstants.kFeederSpeed), m_shooter)
-        ));
+        .toggleOnTrue(new ShooterBeltCommand(m_shooter, m_belt));
 
 
     

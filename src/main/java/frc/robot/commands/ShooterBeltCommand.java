@@ -32,8 +32,7 @@ public class ShooterBeltCommand extends Command {
   @Override
   public void initialize() {
     // Start flywheel using RPM control for consistent speed
-    //m_shooter.setFlywheelRPM(Constants.ShooterConstants.kShooterTargetRPM);
-    m_shooter.setFlywheelSpeed(0.75);
+    m_shooter.setFlywheelRPM(Constants.ShooterConstants.kShooterTargetRPM);
     m_beltStarted = false;
   }
 
@@ -65,9 +64,9 @@ public class ShooterBeltCommand extends Command {
 
   @Override
   public void end(boolean interrupted) {
-    // Stop all motors using percent output (0 RPM via setSpeed)
-    m_shooter.setFlywheelSpeed(0);
-    m_shooter.setIndexerSpeed(0);
+    // Stop all motors
+    m_shooter.stopFlywheel();
+    m_shooter.stopIndexer();
     m_belt.setSpeed(0);
   }
 
