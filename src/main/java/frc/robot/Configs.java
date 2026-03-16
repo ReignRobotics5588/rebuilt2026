@@ -60,7 +60,7 @@ public final class Configs {
         static {
             intake_config
                     .idleMode(IdleMode.kBrake)
-                    .smartCurrentLimit(40);
+                    .smartCurrentLimit(60);
         }
 
     }

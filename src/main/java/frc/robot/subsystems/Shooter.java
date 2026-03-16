@@ -32,7 +32,6 @@ public class Shooter extends SubsystemBase {
   private double m_dashboardP = Constants.ShooterConstants.kFlywheelP;
   private double m_dashboardI = Constants.ShooterConstants.kFlywheelI;
   private double m_dashboardD = Constants.ShooterConstants.kFlywheelD;
-  private double m_dashboardFF = Constants.ShooterConstants.kFlywheelFF;
   private double m_dashboardTargetRPM = Constants.ShooterConstants.kShooterTargetRPM;
 
   public Shooter() {
@@ -46,67 +45,16 @@ public class Shooter extends SubsystemBase {
   }
 
   /**
-   * Initialize dashboard with default PID values and RPM target
+   * Initialize dashboard with RPM tolerance (other values initialized in RobotContainer)
    */
   private void initializeDashboard() {
-    SmartDashboard.putNumber("Shooter/PID P Gain", Constants.ShooterConstants.kFlywheelP);
-    SmartDashboard.putNumber("Shooter/PID I Gain", Constants.ShooterConstants.kFlywheelI);
-    SmartDashboard.putNumber("Shooter/PID D Gain", Constants.ShooterConstants.kFlywheelD);
-    SmartDashboard.putNumber("Shooter/PID FF Gain", Constants.ShooterConstants.kFlywheelFF);
-    SmartDashboard.putNumber("Shooter/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
     SmartDashboard.putNumber("Shooter/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
   }
 
   @Override
   public void periodic() {
-    // Check for PID changes from dashboard
-    checkAndApplyPIDChanges();
-
-    // Update target RPM from dashboard
-    m_dashboardTargetRPM = SmartDashboard.getNumber("Shooter/Target RPM", m_dashboardTargetRPM);
-
-    // Update telemetry data for Glass
+    // Update telemetry data for Glass/Shuffleboard
     updateTelemetry();
-  }
-
-  /**
-   * Check if PID values changed on dashboard and apply them to the motor
-   * controller
-   */
-  private void checkAndApplyPIDChanges() {
-    double newP = SmartDashboard.getNumber("Shooter/PID P Gain", m_dashboardP);
-    double newI = SmartDashboard.getNumber("Shooter/PID I Gain", m_dashboardI);
-    double newD = SmartDashboard.getNumber("Shooter/PID D Gain", m_dashboardD);
-    double newFF = SmartDashboard.getNumber("Shooter/PID FF Gain", m_dashboardFF);
-
-    // Check if any value changed
-    if (newP != m_dashboardP || newI != m_dashboardI || newD != m_dashboardD || newFF != m_dashboardFF) {
-      m_dashboardP = newP;
-      m_dashboardI = newI;
-      m_dashboardD = newD;
-      m_dashboardFF = newFF;
-
-      // Create new config with updated PID values
-      SparkFlexConfig updatedConfig = new SparkFlexConfig();
-      updatedConfig
-          .idleMode(com.revrobotics.spark.config.SparkBaseConfig.IdleMode.kBrake)
-          .smartCurrentLimit(40);
-
-      updatedConfig.encoder
-          .velocityConversionFactor(1.0);
-
-      updatedConfig.closedLoop
-          .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-          .pid(m_dashboardP, m_dashboardI, m_dashboardD)
-          .outputRange(-1.0, 1.0);
-
-      // Apply new configuration
-      m_flywheel.configure(updatedConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
-
-      SmartDashboard.putString("Shooter/Status", String.format(
-          "[Shooter] PID Updated: P=%.6f, I=%.6f, D=%.6f, FF=%.6f",
-          m_dashboardP, m_dashboardI, m_dashboardD, m_dashboardFF));
-    }
   }
 
   /**
@@ -136,7 +84,6 @@ public class Shooter extends SubsystemBase {
     SmartDashboard.putNumber("Shooter/Active P Gain", m_dashboardP);
     SmartDashboard.putNumber("Shooter/Active I Gain", m_dashboardI);
     SmartDashboard.putNumber("Shooter/Active D Gain", m_dashboardD);
-    SmartDashboard.putNumber("Shooter/Active FF Gain", m_dashboardFF);
     SmartDashboard.putNumber("Shooter/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
   }
 
@@ -154,15 +101,14 @@ public class Shooter extends SubsystemBase {
 
   /**
    * Sets the SparkFlex shooter to a target RPM using the internal PID controller.
-   * This ensures the flywheel maintains consistent speed.
+   * This ensures the flywheel maintains consistent speed using the tuned PID gains.
    *
    * @param targetRPM the target RPM for the flywheel
    */
   public void setFlywheelRPM(double targetRPM) {
     m_targetRPM = targetRPM;
-    // Use the setSetpoint method with kVelocity control type
-   // m_flywheelPIDController.setSetpoint(targetRPM, com.revrobotics.spark.SparkBase.ControlType.kVelocity);
-    m_flywheel.setVoltage(.75);
+    // Use the closed-loop controller to reach and maintain target velocity (RPM)
+    m_flywheelPIDController.setReference(targetRPM, com.revrobotics.spark.SparkBase.ControlType.kVelocity);
   }
 
   /**
@@ -202,6 +148,48 @@ public class Shooter extends SubsystemBase {
   public boolean isAtTargetRPM(double targetRPM, double tolerance) {
     double flywheelRPM = getFlywheelRPM();
     return Math.abs(flywheelRPM - targetRPM) <= tolerance;
+  }
+
+  /**
+   * Updates dashboard PID values and applies them to the controller if changed.
+   * Called from RobotContainer.periodic() to ensure constant monitoring.
+   * 
+   * @param newP proportional gain
+   * @param newI integral gain
+   * @param newD derivative gain
+   * @param newTargetRPM target RPM for the flywheel
+   */
+  public void updatePIDFromDashboard(double newP, double newI, double newD, double newTargetRPM) {
+    // Check if any value changed
+    if (newP != m_dashboardP || newI != m_dashboardI || newD != m_dashboardD) {
+      m_dashboardP = newP;
+      m_dashboardI = newI;
+      m_dashboardD = newD;
+
+      // Create new config with updated PID values
+      SparkFlexConfig updatedConfig = new SparkFlexConfig();
+      updatedConfig
+          .idleMode(com.revrobotics.spark.config.SparkBaseConfig.IdleMode.kBrake)
+          .smartCurrentLimit(40);
+
+      updatedConfig.encoder
+          .velocityConversionFactor(1.0);
+
+      updatedConfig.closedLoop
+          .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+          .pid(m_dashboardP, m_dashboardI, m_dashboardD)
+          .outputRange(-1.0, 1.0);
+
+      // Apply new configuration
+      m_flywheel.configure(updatedConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+
+      SmartDashboard.putString("Shooter/Status", String.format(
+          "[Shooter] PID Updated: P=%.6f, I=%.6f, D=%.6f",
+          m_dashboardP, m_dashboardI, m_dashboardD));
+    }
+
+    // Update target RPM
+    m_dashboardTargetRPM = newTargetRPM;
   }
 
 }

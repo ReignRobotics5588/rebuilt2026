@@ -131,7 +131,7 @@ public final class Constants {
   public static final double kShooterRpmHysteresis = 50.0;
     
     // PID tuning parameters for SparkFlex internal controller (flywheel only)
-    public static final double kFlywheelP = 0.0005;
+    public static final double kFlywheelP = 0.0;
     public static final double kFlywheelI = 0.0;
     public static final double kFlywheelD = 0.0;
     public static final double kFlywheelFF = 0.000156;

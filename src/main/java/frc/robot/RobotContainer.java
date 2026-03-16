@@ -23,6 +23,7 @@ import frc.robot.commands.TurnToAngleCommand;
 import frc.robot.commands.AutoCommandFactory;
 import frc.robot.commands.IntakeBeltCommand;
 import frc.robot.commands.ShooterBeltCommand;
+import frc.robot.commands.ShooterPIDTestCommand;
 import frc.robot.commands.LimelightAlignCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
@@ -52,6 +53,12 @@ public class RobotContainer {
     // Configure the button bindings
     configureButtonBindings();
     DriverStation.silenceJoystickConnectionWarning(true);
+
+    // Initialize dashboard values for Shooter PID tuning
+    SmartDashboard.putNumber("Shooter/PID P Gain", Constants.ShooterConstants.kFlywheelP);
+    SmartDashboard.putNumber("Shooter/PID I Gain", Constants.ShooterConstants.kFlywheelI);
+    SmartDashboard.putNumber("Shooter/PID D Gain", Constants.ShooterConstants.kFlywheelD);
+    SmartDashboard.putNumber("Shooter/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
 
     // Default commands for subsystems
     m_intake.setDefaultCommand(
@@ -98,6 +105,44 @@ public class RobotContainer {
   }
 
   /**
+   * Periodic method to update dashboard-driven values.
+   * This runs every robot cycle (20ms) and keeps Limelight target and Shooter PID synced with dashboard.
+   * Called from Robot.robotPeriodic() before CommandScheduler.
+   */
+  public void periodic() {
+    // ===== LIMELIGHT: Update desired tag ID =====
+    // Check dashboard first for manual override
+    int dashboardTagID = (int) SmartDashboard.getNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, -1);
+    
+    // If dashboard has been changed to something other than -1 (any tag), use it as override
+    // Otherwise, use alliance-based default
+    if (dashboardTagID != -1) {
+      // Dashboard has a specific tag set - use it
+      m_limelight.setDesiredTagID(dashboardTagID);
+    } else {
+      // Dashboard is at default (-1 = any tag), so use alliance-based default
+      String allianceName = DriverStation.getAlliance().map(Enum::name).orElse("Invalid");
+      if ("RED".equalsIgnoreCase(allianceName)) {
+        m_limelight.setDesiredTagID(Constants.LimelightConstants.kRedAllianceTargetTagID);
+      } else if ("BLUE".equalsIgnoreCase(allianceName)) {
+        m_limelight.setDesiredTagID(Constants.LimelightConstants.kBlueAllianceTargetTagID);
+      } else {
+        // Unknown alliance - allow any tag
+        m_limelight.setDesiredTagID(-1);
+      }
+    }
+
+    // ===== SHOOTER: Update PID gains and target RPM =====
+    double shooterP = SmartDashboard.getNumber("Shooter/PID P Gain", Constants.ShooterConstants.kFlywheelP);
+    double shooterI = SmartDashboard.getNumber("Shooter/PID I Gain", Constants.ShooterConstants.kFlywheelI);
+    double shooterD = SmartDashboard.getNumber("Shooter/PID D Gain", Constants.ShooterConstants.kFlywheelD);
+    double shooterTargetRPM = SmartDashboard.getNumber("Shooter/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
+    
+    // Apply any PID changes and update target RPM
+    m_shooter.updatePIDFromDashboard(shooterP, shooterI, shooterD, shooterTargetRPM);
+  }
+
+  /**
    * Use this method to define your button->command mappings. Buttons can be
    * created by
    * instantiating a {@link edu.wpi.first.wpilibj.GenericHID} or one of its
@@ -116,7 +161,12 @@ public class RobotContainer {
     
     // Spit out command: Run intake in reverse at 0.7 power
     new JoystickButton(m_driverController, XboxController.Button.kLeftBumper.value)
-        .toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(-0.7), m_intake));
+        .toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(0.7), m_intake));
+    
+    // Shooter PID Test: Use right bumper to test PID tuning
+    // Reads dashboard target RPM and uses PID-controlled setFlywheelRPM()
+    new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value)
+        .toggleOnTrue(new ShooterPIDTestCommand(m_shooter));
     
 /*     // Shooter + Belt: Shooter ramps to speed first, then belt engages
     new JoystickButton(m_driverController, XboxController.Button.kY.value)

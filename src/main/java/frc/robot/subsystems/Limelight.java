@@ -38,6 +38,8 @@ public class Limelight extends SubsystemBase {
    * Initialize dashboard with target tag ID
    */
   private void initializeDashboard() {
+    // Initialize desired tag ID key (-1 = any tag)
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, -1);
     // Only publish the minimal keys needed for tuning angling and distance
     SmartDashboard.putBoolean(Constants.LimelightConstants.kDashboardHasTargetKey, false);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, 0.0);
@@ -48,20 +50,6 @@ public class Limelight extends SubsystemBase {
 
   @Override
   public void periodic() {
-    // Choose desired tag ID based on alliance color to avoid shooting the wrong target.
-    // Red alliance should target 10, Blue alliance should target 26.
-    String allianceName = DriverStation.getAlliance().map(Enum::name).orElse("Invalid");
-    if ("RED".equalsIgnoreCase(allianceName)) {
-      m_desiredTagID = Constants.LimelightConstants.kRedAllianceTargetTagID;
-    } else if ("BLUE".equalsIgnoreCase(allianceName)) {
-      m_desiredTagID = Constants.LimelightConstants.kBlueAllianceTargetTagID;
-    } else {
-      // Unknown/ invalid alliance (e.g., practice) - allow dashboard override (-1 means any tag)
-      m_desiredTagID = (int) SmartDashboard.getNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, -1);
-    }
-    // Keep dashboard in sync so drivers can see which tag we're targeting
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, m_desiredTagID);
-    
     // Update vision tracking data every cycle
     updateTargetData();
     updateTelemetry();
@@ -166,6 +154,15 @@ public class Limelight extends SubsystemBase {
    */
   public int getDesiredTagID() {
     return m_desiredTagID;
+  }
+
+  /**
+   * Set the desired April tag ID to target
+   * @param tagID the tag ID to target, or -1 for any tag
+   */
+  public void setDesiredTagID(int tagID) {
+    m_desiredTagID = tagID;
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, m_desiredTagID);
   }
 
   /**
