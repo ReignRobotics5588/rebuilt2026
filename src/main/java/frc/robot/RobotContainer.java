@@ -25,6 +25,7 @@ import frc.robot.commands.IntakeBeltCommand;
 import frc.robot.commands.ShooterBeltCommand;
 import frc.robot.commands.ShooterPIDTestCommand;
 import frc.robot.commands.LimelightAlignCommand;
+import frc.robot.commands.IntakeThenShootAutoCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /*
@@ -55,10 +56,10 @@ public class RobotContainer {
     DriverStation.silenceJoystickConnectionWarning(true);
 
     // Initialize dashboard values for Shooter PID tuning
-    SmartDashboard.putNumber("Shooter/PID P Gain", Constants.ShooterConstants.kFlywheelP);
-    SmartDashboard.putNumber("Shooter/PID I Gain", Constants.ShooterConstants.kFlywheelI);
-    SmartDashboard.putNumber("Shooter/PID D Gain", Constants.ShooterConstants.kFlywheelD);
-    SmartDashboard.putNumber("Shooter/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
+    SmartDashboard.putNumber("PID Shooter Testing/PID P Gain", Constants.ShooterConstants.kFlywheelP);
+    SmartDashboard.putNumber("PID Shooter Testing/PID I Gain", Constants.ShooterConstants.kFlywheelI);
+    SmartDashboard.putNumber("PID Shooter Testing/PID D Gain", Constants.ShooterConstants.kFlywheelD);
+    SmartDashboard.putNumber("PID Shooter Testing/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
 
     // Default commands for subsystems
     m_intake.setDefaultCommand(
@@ -94,6 +95,10 @@ public class RobotContainer {
 
     // Turn left 45 degrees only
     m_autoChooser.addOption("Turn Left 45°", new TurnToAngleCommand(m_robotDrive, 45.0));
+
+    // Intake and shoot: Run intake, then shoot once flywheel reaches 1000 RPM
+    m_autoChooser.addOption("Intake -> Shoot at 1000 RPM",
+        new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, 2800.0));
 
     // Full sequence: drive back, turn left, limelight align, shoot
     m_autoChooser.addOption("DriveBack->TurnLeft->Aim->Shoot (45°)",
@@ -133,10 +138,10 @@ public class RobotContainer {
     }
 
     // ===== SHOOTER: Update PID gains and target RPM =====
-    double shooterP = SmartDashboard.getNumber("Shooter/PID P Gain", Constants.ShooterConstants.kFlywheelP);
-    double shooterI = SmartDashboard.getNumber("Shooter/PID I Gain", Constants.ShooterConstants.kFlywheelI);
-    double shooterD = SmartDashboard.getNumber("Shooter/PID D Gain", Constants.ShooterConstants.kFlywheelD);
-    double shooterTargetRPM = SmartDashboard.getNumber("Shooter/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
+    double shooterP = SmartDashboard.getNumber("PID Shooter Testing/PID P Gain", Constants.ShooterConstants.kFlywheelP);
+    double shooterI = SmartDashboard.getNumber("PID Shooter Testing/PID I Gain", Constants.ShooterConstants.kFlywheelI);
+    double shooterD = SmartDashboard.getNumber("PID Shooter Testing/PID D Gain", Constants.ShooterConstants.kFlywheelD);
+    double shooterTargetRPM = SmartDashboard.getNumber("PID Shooter Testing/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
     
     // Apply any PID changes and update target RPM
     m_shooter.updatePIDFromDashboard(shooterP, shooterI, shooterD, shooterTargetRPM);
