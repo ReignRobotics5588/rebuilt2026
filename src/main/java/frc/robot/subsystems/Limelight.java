@@ -20,6 +20,8 @@ public class Limelight extends SubsystemBase {
   private double m_targetOffsetY = 0.0;
   private int m_targetID = -1;
   private int m_desiredTagID = -1;  // -1 means any tag
+  private double m_targetX = -1;
+  private double m_targetY = -1;
   private PoseEstimate m_latestPoseEstimate = new PoseEstimate();
 
   public Limelight() {
@@ -46,6 +48,7 @@ public class Limelight extends SubsystemBase {
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, 0.0);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, 0.0);
+    
   }
 
   @Override
@@ -83,6 +86,8 @@ public class Limelight extends SubsystemBase {
       m_targetID = primaryFiducial.id;
       m_targetOffsetX = primaryFiducial.txnc;
       m_targetOffsetY = primaryFiducial.tync;
+      m_targetX = LimelightHelpers.getTX(m_limelightName); 
+      m_targetY = LimelightHelpers.getTY(m_limelightName); 
       
       // If desired tag is set, check if this is the one we want
       if (m_desiredTagID != -1 && m_targetID != m_desiredTagID) {
@@ -92,6 +97,8 @@ public class Limelight extends SubsystemBase {
             m_targetID = (int) fid.id;
             m_targetOffsetX = fid.txnc;
             m_targetOffsetY = fid.tync;
+            m_targetX = 0.0;
+            m_targetY = 0.0;
             break;
           }
         }
@@ -101,6 +108,8 @@ public class Limelight extends SubsystemBase {
       m_targetID = -1;
       m_targetOffsetX = 0.0;
       m_targetOffsetY = 0.0;
+      m_targetX = 0.0;
+      m_targetY = 0.0; 
     }
   }
 
@@ -113,6 +122,8 @@ public class Limelight extends SubsystemBase {
     SmartDashboard.putBoolean(Constants.LimelightConstants.kDashboardHasTargetKey, m_hasTarget);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, m_targetOffsetX);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, m_targetOffsetY);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardRobotXKey, m_targetX);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardRobotYKey, m_targetY);
     double[] poseRelative = getRobotPoseRelativeToTarget();
     if (poseRelative != null && poseRelative.length >= 2) {
       SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, poseRelative[0]);
