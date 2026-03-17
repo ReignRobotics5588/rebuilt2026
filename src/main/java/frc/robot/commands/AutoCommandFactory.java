@@ -73,6 +73,33 @@ public class AutoCommandFactory {
   }
 
   /**
+   * Creates a command that runs the intake while simultaneously ramping up the shooter flywheel.
+   * Once the shooter reaches the specified RPM target, the indexer and belt engage to feed game pieces.
+   *
+   * @param intake the intake subsystem
+   * @param shooter the shooter subsystem
+   * @param belt the belt subsystem
+   * @param shooterRPMTarget the RPM threshold at which to start the indexer and belt (e.g., 1000)
+   * @return a command that intakes then shoots once flywheel reaches target RPM
+   */
+  public static Command intakeThenShoot(Intake intake, Shooter shooter, Belt belt, double shooterRPMTarget) {
+    return new IntakeThenShootAutoCommand(intake, shooter, belt, shooterRPMTarget);
+  }
+
+  /**
+   * Creates a command that runs the intake while simultaneously ramping up the shooter flywheel.
+   * Once the shooter reaches 1000 RPM (default), the indexer and belt engage to feed game pieces.
+   *
+   * @param intake the intake subsystem
+   * @param shooter the shooter subsystem
+   * @param belt the belt subsystem
+   * @return a command that intakes then shoots once flywheel reaches 1000 RPM
+   */
+  public static Command intakeThenShoot(Intake intake, Shooter shooter, Belt belt) {
+    return new IntakeThenShootAutoCommand(intake, shooter, belt);
+  }
+
+  /**
    * Drive backwards a fixed distance (meters), turn left by a given angle (degrees),
    * align to the target with Limelight, and then run the shooter+belt sequence.
    *

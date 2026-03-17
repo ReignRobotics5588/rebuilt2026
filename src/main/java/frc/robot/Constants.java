@@ -123,17 +123,17 @@ public final class Constants {
     public static final double kFeederSpeed = 0.75;
     
     // Target RPM for shooter flywheel (SparkFlex)
-    public static final double kShooterTargetRPM = 2000.0;
+    public static final double kShooterTargetRPM = 3000.0;
     
     // RPM tolerance for speed control (±RPM)
-    public static final double kShooterRpmTolerance = 200.0;
+    public static final double kShooterRpmTolerance = 50.0;
   // Hysteresis margin (RPM) to prevent feeder chatter on transient dips
   public static final double kShooterRpmHysteresis = 50.0;
     
     // PID tuning parameters for SparkFlex internal controller (flywheel only)
-    public static final double kFlywheelP = 0.0;
+    public static final double kFlywheelP = 0.0016869;
     public static final double kFlywheelI = 0.0;
-    public static final double kFlywheelD = 0.0;
+    public static final double kFlywheelD = 0.0012;
     public static final double kFlywheelFF = 0.000156;
   }
 
@@ -186,8 +186,8 @@ public final class Constants {
   public static final String kDashboardDebugKey = kDashboardPrefix + "Debug";
 
   // Subsystem telemetry keys
-  public static final String kShooterLastFlexSpeedKey = "Shooter/Last Flex Speed";
-  public static final String kShooterLastMaxSpeedKey = "Shooter/Last Max Speed";
+  public static final String kShooterLastFlexSpeedKey = "PID Shooter Testing/Last Flex Speed";
+  public static final String kShooterLastMaxSpeedKey = "PID Shooter Testing/Last Indexer Speed";
   public static final String kIntakeLastSpeedKey = "Intake/Last Speed";
   public static final String kBeltLastSpeedKey = "Belt/Last Speed";
 

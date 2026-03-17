@@ -48,7 +48,7 @@ public class Shooter extends SubsystemBase {
    * Initialize dashboard with RPM tolerance (other values initialized in RobotContainer)
    */
   private void initializeDashboard() {
-    SmartDashboard.putNumber("Shooter/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
+    SmartDashboard.putNumber("PID Shooter Testing/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
   }
 
   @Override
@@ -62,29 +62,29 @@ public class Shooter extends SubsystemBase {
    */
   private void updateTelemetry() {
     // Flywheel (PID-controlled)
-    SmartDashboard.putNumber("Shooter/Flywheel RPM", getFlywheelRPM());
-    SmartDashboard.putNumber("Shooter/Flywheel Target RPM", m_targetRPM);
-    SmartDashboard.putNumber("Shooter/Flywheel Output %", m_flywheelOutputPercent);
-    SmartDashboard.putBoolean("Shooter/At Target RPM",
+    SmartDashboard.putNumber("PID Shooter Testing/Flywheel RPM", getFlywheelRPM());
+    SmartDashboard.putNumber("PID Shooter Testing/Flywheel Target RPM", m_targetRPM);
+    SmartDashboard.putNumber("PID Shooter Testing/Flywheel Output %", m_flywheelOutputPercent);
+    SmartDashboard.putBoolean("PID Shooter Testing/At Target RPM",
         isAtTargetRPM(m_targetRPM, Constants.ShooterConstants.kShooterRpmTolerance));
-    SmartDashboard.putNumber("Shooter/RPM Error",
+    SmartDashboard.putNumber("PID Shooter Testing/RPM Error",
         getFlywheelRPM() - m_targetRPM);
 
     // Indexer (feeder wheel)
-    SmartDashboard.putNumber("Shooter/Indexer RPM", getIndexerRPM());
-    SmartDashboard.putNumber("Shooter/Indexer Output %", m_indexerOutputPercent);
+    SmartDashboard.putNumber("PID Shooter Testing/Indexer RPM", getIndexerRPM());
+    SmartDashboard.putNumber("PID Shooter Testing/Indexer Output %", m_indexerOutputPercent);
     // Last commanded speeds
     SmartDashboard.putNumber(Constants.LimelightConstants.kShooterLastFlexSpeedKey, m_lastFlywheelSpeed);
     SmartDashboard.putNumber(Constants.LimelightConstants.kShooterLastMaxSpeedKey, m_lastIndexerSpeed);
 
     // Dashboard tuning values
-    SmartDashboard.putNumber("Shooter/Dashboard Target RPM", m_dashboardTargetRPM);
+    SmartDashboard.putNumber("PID Shooter Testing/Dashboard Target RPM", m_dashboardTargetRPM);
 
     // Current PID values (read-only display in telemetry section)
-    SmartDashboard.putNumber("Shooter/Active P Gain", m_dashboardP);
-    SmartDashboard.putNumber("Shooter/Active I Gain", m_dashboardI);
-    SmartDashboard.putNumber("Shooter/Active D Gain", m_dashboardD);
-    SmartDashboard.putNumber("Shooter/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
+    SmartDashboard.putNumber("PID Shooter Testing/Active P Gain", m_dashboardP);
+    SmartDashboard.putNumber("PID Shooter Testing/Active I Gain", m_dashboardI);
+    SmartDashboard.putNumber("PID Shooter Testing/Active D Gain", m_dashboardD);
+    SmartDashboard.putNumber("PID Shooter Testing/RPM Tolerance", Constants.ShooterConstants.kShooterRpmTolerance);
   }
 
   public void setFlywheelSpeed(double speed) {
@@ -108,7 +108,7 @@ public class Shooter extends SubsystemBase {
   public void setFlywheelRPM(double targetRPM) {
     m_targetRPM = targetRPM;
     // Use the closed-loop controller to reach and maintain target velocity (RPM)
-    m_flywheelPIDController.setReference(targetRPM, com.revrobotics.spark.SparkBase.ControlType.kVelocity);
+    m_flywheelPIDController.setSetpoint(targetRPM, com.revrobotics.spark.SparkBase.ControlType.kVelocity);
   }
 
   /**
