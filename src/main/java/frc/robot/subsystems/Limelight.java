@@ -21,6 +21,8 @@ public class Limelight extends SubsystemBase {
   private int m_targetID = -1;
   private int m_desiredTagID = -1;  // -1 means any tag
   private double m_targetArea = -1;
+  private double m_distToCamera = 0;
+ 
  
   private PoseEstimate m_latestPoseEstimate = new PoseEstimate();
 
@@ -49,7 +51,8 @@ public class Limelight extends SubsystemBase {
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, 0.0);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetAreaKey, 0.0);
-    
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
+
   }
 
   @Override
@@ -88,6 +91,7 @@ public class Limelight extends SubsystemBase {
       m_targetOffsetX = primaryFiducial.txnc;
       m_targetOffsetY = primaryFiducial.tync;
       m_targetArea = LimelightHelpers.getTA(m_limelightName); 
+      m_distToCamera = primaryFiducial.distToCamera;
       
       
       // If desired tag is set, check if this is the one we want
@@ -99,6 +103,7 @@ public class Limelight extends SubsystemBase {
             m_targetOffsetX = fid.txnc;
             m_targetOffsetY = fid.tync;
             m_targetArea = fid.ta; 
+            m_distToCamera = fid.distToCamera;
             break;
           }
         }
@@ -109,6 +114,7 @@ public class Limelight extends SubsystemBase {
       m_targetOffsetX = 0.0;
       m_targetOffsetY = 0.0;
       m_targetArea = 0.0;
+      m_distToCamera = 0.0;
       
     }
   }
@@ -123,7 +129,9 @@ public class Limelight extends SubsystemBase {
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, m_targetOffsetX);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, m_targetOffsetY);
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetAreaKey, m_targetArea);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, m_distToCamera);
   
+
     double[] poseRelative = getRobotPoseRelativeToTarget();
     if (poseRelative != null && poseRelative.length >= 2) {
       SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, poseRelative[0]);
