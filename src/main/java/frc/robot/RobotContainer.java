@@ -55,12 +55,6 @@ public class RobotContainer {
     configureButtonBindings();
     DriverStation.silenceJoystickConnectionWarning(true);
 
-    // Initialize dashboard values for Shooter PID tuning
-    SmartDashboard.putNumber("PID Shooter Testing/PID P Gain", Constants.ShooterConstants.kFlywheelP);
-    SmartDashboard.putNumber("PID Shooter Testing/PID I Gain", Constants.ShooterConstants.kFlywheelI);
-    SmartDashboard.putNumber("PID Shooter Testing/PID D Gain", Constants.ShooterConstants.kFlywheelD);
-    SmartDashboard.putNumber("PID Shooter Testing/Target RPM", Constants.ShooterConstants.kShooterTargetRPM);
-
     // Default commands for subsystems
     m_intake.setDefaultCommand(
       new RunCommand(() -> m_intake.setSpeed(0), m_intake)
@@ -98,15 +92,13 @@ public class RobotContainer {
 
     // Intake and shoot: Run intake, then shoot once flywheel reaches 1000 RPM
     m_autoChooser.addOption("Intake -> Shoot at 1000 RPM",
-        new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, 2800.0));
+        new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, Constants.ShooterConstants.kShooterAutoRPM));
 
     // Full sequence: drive back, turn left, limelight align, shoot
     m_autoChooser.addOption("DriveBack->TurnLeft->Aim->Shoot (45°)",
         AutoCommandFactory.driveBackTurnAimShoot(m_robotDrive, m_limelight, m_shooter, m_belt, 45.0));
 
     SmartDashboard.putData("Autonomous Mode", m_autoChooser);
-    // Build telemetry tab (elastic/list style) showing all important values
-    TelemetryLayout.setup(m_robotDrive, m_limelight, m_shooter, m_belt, m_intake);
   }
 
   /**
@@ -145,6 +137,16 @@ public class RobotContainer {
     
     // Apply any PID changes and update target RPM
     m_shooter.updatePIDFromDashboard(shooterP, shooterI, shooterD, shooterTargetRPM);
+    
+    // ===== SHOOTER TELEMETRY: Display current performance and PID gains =====
+    // Display current and target RPM for monitoring (updated every cycle via getters)
+    SmartDashboard.putNumber("Shooter/Current RPM", m_shooter.getFlywheelRPM());
+    SmartDashboard.putNumber("Shooter/Target RPM", m_shooter.getTargetRPM());
+    
+    // Display editable PID gains (these are the live values from dashboard being applied)
+    SmartDashboard.putNumber("Shooter/P Gain", shooterP);
+    SmartDashboard.putNumber("Shooter/I Gain", shooterI);
+    SmartDashboard.putNumber("Shooter/D Gain", shooterD);
   }
 
   /**
@@ -171,19 +173,16 @@ public class RobotContainer {
     // Shooter PID Test: Use right bumper to test PID tuning
     // Reads dashboard target RPM and uses PID-controlled setFlywheelRPM()
     new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value)
-        .toggleOnTrue(new ShooterPIDTestCommand(m_shooter));
+        .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, 3200));
     
 /*     // Shooter + Belt: Shooter ramps to speed first, then belt engages
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
         .toggleOnTrue(new ShooterBeltCommand(m_shooter, m_belt));
 */
 
-    // Flywheel at 50%, wait 2s, then run indexer at constants speed
+    // Shoot at wall
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
-        .toggleOnTrue(Commands.sequence(
-            new RunCommand(() -> m_shooter.setFlywheelSpeed(0.5), m_shooter).withTimeout(2.5),
-            new RunCommand(() -> m_shooter.setIndexerSpeed(Constants.ShooterConstants.kFeederSpeed), m_shooter)
-        ));
+        .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, Constants.ShooterConstants.kShooterAutoRPM));
 
 
     

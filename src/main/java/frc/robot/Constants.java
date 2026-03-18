@@ -106,13 +106,14 @@ public final class Constants {
   }
 
   public static final class NeoMotorConstants {
-    public static final double kFreeSpeedRpm = 5676;
+    // Neo Vortex free speed RPM (6784 RPM, not regular Neo which is 5676)
+    public static final double kFreeSpeedRpm = 6784;
   }
   public static final class IntakeConstants {
     public static final double kIntakeSpeed = -1;
   }
   public static final class BeltConstants {
-    public static final double kBeltSpeed = -0.4;
+    public static final double kBeltSpeed = -0.35;
   }
 
   public static final class ShooterConstants {
@@ -129,12 +130,18 @@ public final class Constants {
     public static final double kShooterRpmTolerance = 50.0;
   // Hysteresis margin (RPM) to prevent feeder chatter on transient dips
   public static final double kShooterRpmHysteresis = 50.0;
+
+  public static final double kShooterAutoRPM = 2800;
     
     // PID tuning parameters for SparkFlex internal controller (flywheel only)
+    // Neo Vortex motor: 6784 RPM max, so FF = 1/6784 ≈ 0.000147
+    // Updated FF from 0.000156 to match Neo Vortex characteristics
     public static final double kFlywheelP = 0.0016869;
     public static final double kFlywheelI = 0.0;
     public static final double kFlywheelD = 0.0012;
-    public static final double kFlywheelFF = 0.000156;
+    public static final double kFlywheelFF = 0.000147;  // 1/6784 for Neo Vortex
+
+    public static int kFlywheelCurrentLimit = 60;
   }
 
   public static final class LimelightConstants {
