@@ -112,7 +112,7 @@ public final class Constants {
     public static final double kIntakeSpeed = -1;
   }
   public static final class BeltConstants {
-    public static final double kBeltSpeed = -0.4;
+    public static final double kBeltSpeed = -0.35;
   }
 
   public static final class ShooterConstants {
@@ -129,6 +129,8 @@ public final class Constants {
     public static final double kShooterRpmTolerance = 50.0;
   // Hysteresis margin (RPM) to prevent feeder chatter on transient dips
   public static final double kShooterRpmHysteresis = 50.0;
+
+  public static final double kShooterAutoRPM = 2800;
     
     // PID tuning parameters for SparkFlex internal controller (flywheel only)
     public static final double kFlywheelP = 0.0016869;

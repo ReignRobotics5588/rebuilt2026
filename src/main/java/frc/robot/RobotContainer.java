@@ -98,7 +98,7 @@ public class RobotContainer {
 
     // Intake and shoot: Run intake, then shoot once flywheel reaches 1000 RPM
     m_autoChooser.addOption("Intake -> Shoot at 1000 RPM",
-        new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, 2800.0));
+        new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, Constants.ShooterConstants.kShooterAutoRPM));
 
     // Full sequence: drive back, turn left, limelight align, shoot
     m_autoChooser.addOption("DriveBack->TurnLeft->Aim->Shoot (45°)",
@@ -171,19 +171,16 @@ public class RobotContainer {
     // Shooter PID Test: Use right bumper to test PID tuning
     // Reads dashboard target RPM and uses PID-controlled setFlywheelRPM()
     new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value)
-        .toggleOnTrue(new ShooterPIDTestCommand(m_shooter));
+        .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, 3200));
     
 /*     // Shooter + Belt: Shooter ramps to speed first, then belt engages
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
         .toggleOnTrue(new ShooterBeltCommand(m_shooter, m_belt));
 */
 
-    // Flywheel at 50%, wait 2s, then run indexer at constants speed
+    // Shoot at wall
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
-        .toggleOnTrue(Commands.sequence(
-            new RunCommand(() -> m_shooter.setFlywheelSpeed(0.5), m_shooter).withTimeout(2.5),
-            new RunCommand(() -> m_shooter.setIndexerSpeed(Constants.ShooterConstants.kFeederSpeed), m_shooter)
-        ));
+        .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, Constants.ShooterConstants.kShooterAutoRPM));
 
 
     
