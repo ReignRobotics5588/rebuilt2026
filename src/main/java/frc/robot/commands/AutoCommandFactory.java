@@ -7,7 +7,10 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.Limelight;
+import frc.robot.subsystems.QuestNav;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 
 /**
  * Factory class for creating autonomous command sequences.
@@ -185,6 +188,80 @@ public class AutoCommandFactory {
         driveBack,
         turnLeft,
         align,
+        Commands.waitSeconds(0.15),
+        shoot,
+        Commands.runOnce(() -> drive.drive(0, 0, 0, false))
+    );
+  }
+
+  /**
+   * Drive backwards a fixed distance (meters), turn left by a given angle (degrees),
+   * navigate to target position using QuestNav full-field pose tracking, and then run the shooter+belt sequence.
+   *
+   * This method uses QuestNav's full-field pose estimation instead of vision alignment,
+   * allowing autonomous navigation to any point on the field.
+   *
+   * @param drive DriveSubsystem instance
+   * @param questNav QuestNav instance for full-field pose tracking
+   * @param shooter Shooter instance
+   * @param belt Belt instance
+   * @param leftTurnDegrees How many degrees to turn left (positive = left)
+   * @return composed autonomous command
+   */
+  public static Command driveBackTurnAimShoot(
+      DriveSubsystem drive,
+      QuestNav questNav,
+      Shooter shooter,
+      Belt belt,
+      double leftTurnDegrees) {
+
+    // Mutable holders so lambdas can capture "by reference"
+    final double[] startXY = new double[2];
+    final double[] startHeading = new double[1];
+    final double[] targetHeading = new double[1];
+    final Pose2d[] targetPose = new Pose2d[1];
+
+    // Step A: capture starting pose/heading
+    Command captureStart = Commands.runOnce(() -> {
+      var p = drive.getPose();
+      startXY[0] = p.getX();
+      startXY[1] = p.getY();
+      startHeading[0] = drive.getHeading();
+      targetHeading[0] = startHeading[0] + leftTurnDegrees;
+      
+      // Set target pose to a position that is 1.5m backward from current position
+      // and rotated by leftTurnDegrees
+      double backDist = 1.5;
+      double newX = startXY[0] - backDist * Math.cos(Math.toRadians(startHeading[0]));
+      double newY = startXY[1] - backDist * Math.sin(Math.toRadians(startHeading[0]));
+      targetPose[0] = new Pose2d(newX, newY, Rotation2d.fromDegrees(targetHeading[0]));
+    });
+
+    // Step B: drive backwards until we've moved ~1.5 meters from start
+    Command driveBack = Commands.run(() -> {
+      // Drive backwards at 30% of max speed
+      drive.drive(-0.3, 0, 0, false);
+    }, drive)
+        .until(() -> {
+          var p = drive.getPose();
+          double dx = p.getX() - startXY[0];
+          double dy = p.getY() - startXY[1];
+          double dist = Math.hypot(dx, dy);
+          return dist >= 1.5; // meters
+        })
+        .finallyDo(() -> drive.drive(0, 0, 0, false));
+
+    // Step C: navigate to target pose using QuestNav full-field tracking
+    Command navigateToTarget = new QuestNavAlignCommand(drive, questNav, targetPose[0]).withTimeout(5.0);
+
+    // Step D: run shooter+belt until interrupted / timeout (shoot for 4s)
+    Command shoot = new ShooterBeltCommand(shooter, belt).withTimeout(4.0);
+
+    // Compose everything sequentially
+    return Commands.sequence(
+        captureStart,
+        driveBack,
+        navigateToTarget,
         Commands.waitSeconds(0.15),
         shoot,
         Commands.runOnce(() -> drive.drive(0, 0, 0, false))

@@ -15,16 +15,14 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.Belt;
-import frc.robot.subsystems.Limelight;
+import frc.robot.subsystems.QuestNav;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.commands.DriveDistanceCommand;
 import frc.robot.commands.TurnToAngleCommand;
 import frc.robot.commands.AutoCommandFactory;
 import frc.robot.commands.IntakeBeltCommand;
-import frc.robot.commands.ShooterBeltCommand;
-import frc.robot.commands.ShooterPIDTestCommand;
-import frc.robot.commands.LimelightAlignCommand;
+import frc.robot.commands.QuestNavAlignCommand;
 import frc.robot.commands.IntakeThenShootAutoCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
@@ -40,7 +38,7 @@ public class RobotContainer {
   public static final Intake m_intake = new Intake();
   public static final Shooter m_shooter = new Shooter();
   public static final Belt m_belt = new Belt();
-  public static final Limelight m_limelight = new Limelight();
+  public static final QuestNav m_questNav = new QuestNav();
   // The driver's controller
   XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
 
@@ -73,9 +71,9 @@ public class RobotContainer {
       }, m_shooter)
     );
 
-    // Configure default Limelight command (continuous vision processing)
-    m_limelight.setDefaultCommand(
-      new RunCommand(() -> {}, m_limelight)
+    // Configure default QuestNav command (continuous pose tracking)
+    m_questNav.setDefaultCommand(
+      new RunCommand(() -> {}, m_questNav)
     );
 
     // Configure default drive command (joystick control)
@@ -105,43 +103,21 @@ public class RobotContainer {
     m_autoChooser.addOption("Intake -> Shoot at 1000 RPM",
         new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, Constants.ShooterConstants.kShooterAutoRPM));
 
-    // Full sequence: drive back, turn left, limelight align, shoot
+    // Full sequence: drive back, turn left, QuestNav aim, shoot
     m_autoChooser.addOption("DriveBack->TurnLeft->Aim->Shoot (45°)",
-        AutoCommandFactory.driveBackTurnAimShoot(m_robotDrive, m_limelight, m_shooter, m_belt, 45.0));
+        AutoCommandFactory.driveBackTurnAimShoot(m_robotDrive, m_questNav, m_shooter, m_belt, 45.0));
 
     SmartDashboard.putData("Autonomous Mode", m_autoChooser);
     // Build telemetry tab (elastic/list style) showing all important values
-    TelemetryLayout.setup(m_robotDrive, m_limelight, m_shooter, m_belt, m_intake);
+    TelemetryLayout.setup(m_robotDrive, m_questNav, m_shooter, m_belt, m_intake);
   }
 
   /**
    * Periodic method to update dashboard-driven values.
-   * This runs every robot cycle (20ms) and keeps Limelight target and Shooter PID synced with dashboard.
+   * This runs every robot cycle (20ms) and keeps Shooter PID synced with dashboard.
    * Called from Robot.robotPeriodic() before CommandScheduler.
    */
   public void periodic() {
-    // ===== LIMELIGHT: Update desired tag ID =====
-    // Check dashboard first for manual override
-    int dashboardTagID = (int) SmartDashboard.getNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, -1);
-    
-    // If dashboard has been changed to something other than -1 (any tag), use it as override
-    // Otherwise, use alliance-based default
-    if (dashboardTagID != -1) {
-      // Dashboard has a specific tag set - use it
-      m_limelight.setDesiredTagID(dashboardTagID);
-    } else {
-      // Dashboard is at default (-1 = any tag), so use alliance-based default
-      String allianceName = DriverStation.getAlliance().map(Enum::name).orElse("Invalid");
-      if ("RED".equalsIgnoreCase(allianceName)) {
-        m_limelight.setDesiredTagID(Constants.LimelightConstants.kRedAllianceTargetTagID);
-      } else if ("BLUE".equalsIgnoreCase(allianceName)) {
-        m_limelight.setDesiredTagID(Constants.LimelightConstants.kBlueAllianceTargetTagID);
-      } else {
-        // Unknown alliance - allow any tag
-        m_limelight.setDesiredTagID(-1);
-      }
-    }
-
     // ===== SHOOTER: Update PID gains and target RPM =====
     double shooterP = SmartDashboard.getNumber("PID Shooter Testing/PID P Gain", Constants.ShooterConstants.kFlywheelP);
     double shooterI = SmartDashboard.getNumber("PID Shooter Testing/PID I Gain", Constants.ShooterConstants.kFlywheelI);
@@ -187,11 +163,10 @@ public class RobotContainer {
     new JoystickButton(m_driverController, XboxController.Button.kY.value)
         .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, Constants.ShooterConstants.kShooterAutoRPM));
 
-
-    
-    // Limelight vision alignment: Align to detected April tag
+    // QuestNav navigation: Navigate to a target pose on the field
+    // For now, this aligns to the current heading at current position as a test
     new JoystickButton(m_driverController, XboxController.Button.kB.value)
-        .whileTrue(new LimelightAlignCommand(m_robotDrive, m_limelight));
+        .whileTrue(new QuestNavAlignCommand(m_robotDrive, m_questNav, m_questNav.getRobotPose()));
     
     // Old individual button bindings (kept for reference - remove if no longer needed)
     // new JoystickButton(m_driverController, XboxController.Button.kB.value).toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(Constants.BeltConstants.kBeltSpeed), m_intake));

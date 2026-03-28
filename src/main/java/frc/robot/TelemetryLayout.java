@@ -9,7 +9,7 @@ import frc.robot.subsystems.Belt;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.DriveSubsystem;
-import frc.robot.subsystems.Limelight;
+import frc.robot.subsystems.QuestNav;
 
 /**
  * Builds a Telemetry Shuffleboard tab with an elastic/list layout that
@@ -23,25 +23,25 @@ public final class TelemetryLayout {
 
   public static void setup(
       DriveSubsystem drive,
-      Limelight limelight,
+      QuestNav questNav,
       Shooter shooter,
       Belt belt,
       Intake intake) {
 
     ShuffleboardTab tab = Shuffleboard.getTab("Telemetry");
 
-    // Limelight layout (elastic list)
-    ShuffleboardLayout limel = tab.getLayout("Limelight", BuiltInLayouts.kList)
+    // QuestNav layout (elastic list) - full field pose tracking
+    ShuffleboardLayout questnav = tab.getLayout("QuestNav", BuiltInLayouts.kList)
         .withSize(3, 7)
         .withPosition(0, 0);
 
-    limel.addBoolean("Has Target", limelight::hasValidTarget);
-    limel.addNumber("Target Offset X (deg)", limelight::getTargetOffsetX);
-    limel.addNumber("Target Offset Y (deg)", limelight::getTargetOffsetY);
-    limel.addNumber("Distance to Target (m)", limelight::getDistanceToTarget);
-    limel.addNumber("Horizontal Dist (m)", limelight::getHorizontalDistanceToTarget);
-    limel.addString("Status", limelight::getDebugString);
-    limel.addNumber("Desired Tag ID", limelight::getDesiredTagID);
+    questnav.addBoolean("Has Valid Pose", questNav::hasValidPose);
+    questnav.addNumber("Robot X (m)", questNav::getRobotX);
+    questnav.addNumber("Robot Y (m)", questNav::getRobotY);
+    questnav.addNumber("Heading (deg)", questNav::getRobotHeading);
+    questnav.addNumber("Pose Confidence", questNav::getPoseConfidence);
+    questnav.addNumber("Update Latency (ms)", questNav::getUpdateLatency);
+    questnav.addString("Status", questNav::getDebugString);
 
     // Shooter layout
     ShuffleboardLayout sh = tab.getLayout("PID Shooter Testing", BuiltInLayouts.kList)

@@ -197,4 +197,21 @@ public final class Constants {
   public static final int kRedAllianceTargetTagID = 10;
   public static final int kBlueAllianceTargetTagID = 26;
   }
+
+  public static final class QuestNavConstants {
+    // Dashboard keys for QuestNav telemetry
+    public static final String kDashboardPrefix = "QuestNav/";
+    public static final String kDashboardStatusKey = kDashboardPrefix + "Status";
+    public static final String kDashboardConnectedKey = kDashboardPrefix + "Connected";
+    public static final String kDashboardTrackingKey = kDashboardPrefix + "Tracking";
+    public static final String kDashboardPoseXKey = kDashboardPrefix + "Robot X (m)";
+    public static final String kDashboardPoseYKey = kDashboardPrefix + "Robot Y (m)";
+    public static final String kDashboardPoseHeadingKey = kDashboardPrefix + "Robot Heading (deg)";
+    public static final String kDashboardUpdateRateKey = kDashboardPrefix + "Update Rate (Hz)";
+    public static final String kDashboardBatteryKey = kDashboardPrefix + "Battery (%)";
+    
+    // QuestNav system configuration
+    public static final int kLowBatteryThreshold = 20;  // Battery percentage to warn about
+    public static final double kPoseUpdateFrequency = 120.0;  // Hz - Quest display frequency
+  }
 }
