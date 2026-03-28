@@ -73,6 +73,11 @@ public class RobotContainer {
       }, m_shooter)
     );
 
+    // Configure default Limelight command (continuous vision processing)
+    m_limelight.setDefaultCommand(
+      new RunCommand(() -> {}, m_limelight)
+    );
+
     // Configure default drive command (joystick control)
     m_robotDrive.setDefaultCommand(
         // The left stick controls translation of the robot.
