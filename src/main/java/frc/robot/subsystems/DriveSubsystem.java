@@ -92,6 +92,11 @@ public class DriveSubsystem extends SubsystemBase {
     setModuleStates(states);
   }
 
+  /** Drive using pre-computed chassis speeds (used by Choreo trajectory follower). */
+  public void driveChassisSpeeds(ChassisSpeeds speeds) {
+    setModuleStates(DriveConstants.kDriveKinematics.toSwerveModuleStates(speeds));
+  }
+
   /** Lock wheels in X formation to prevent movement. */
   public void setX() {
     setModuleStates(new SwerveModuleState[] {

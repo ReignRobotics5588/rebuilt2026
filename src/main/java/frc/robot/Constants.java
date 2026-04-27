@@ -98,6 +98,10 @@ public final class Constants {
     // Distance to drive back in driveBackTurnAimShoot (meters)
     public static final double kAutoDriveBackDistanceMeters = 1.5;
 
+    // Choreo closed-loop controller gains (translation m/s per meter error, rotation rad/s per rad error)
+    public static final double kChoreoTranslationKP = 5.0;
+    public static final double kChoreoRotationKP = 5.0;
+
     // Constraint for the motion profiled robot angle controller
     public static final TrapezoidProfile.Constraints kThetaControllerConstraints = new TrapezoidProfile.Constraints(
         kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared);

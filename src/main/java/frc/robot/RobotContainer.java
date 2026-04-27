@@ -27,12 +27,13 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.commands.DriveDistanceCommand;
-import frc.robot.commands.TurnToAngleCommand;
 import frc.robot.commands.AutoCommandFactory;
+import frc.robot.commands.ChoreoAutos;
+import frc.robot.commands.DriveDistanceCommand;
 import frc.robot.commands.IntakeBeltCommand;
-import frc.robot.commands.LimelightAlignCommand;
 import frc.robot.commands.IntakeThenShootAutoCommand;
+import frc.robot.commands.LimelightAlignCommand;
+import frc.robot.commands.TurnToAngleCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 public class RobotContainer {
@@ -72,6 +73,7 @@ public class RobotContainer {
 
   private final XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
   private final SendableChooser<Command> m_autoChooser = new SendableChooser<>();
+  private final ChoreoAutos m_choreoAutos = new ChoreoAutos(m_robotDrive);
 
   public RobotContainer() {
     configureButtonBindings();
@@ -95,11 +97,15 @@ public class RobotContainer {
     m_autoChooser.setDefaultOption("Do Nothing (default)", Commands.none());
     m_autoChooser.addOption("Drive Back 1.5m", new DriveDistanceCommand(m_robotDrive, -1.5, 0.3));
     m_autoChooser.addOption("Turn Left 45°", new TurnToAngleCommand(m_robotDrive, 45.0));
-    m_autoChooser.addOption("Intake -> Shoot at 1000 RPM",
+    m_autoChooser.addOption("Intake -> Shoot at Auto RPM",
         new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt,
             Constants.ShooterConstants.kShooterAutoRPM));
     m_autoChooser.addOption("DriveBack->TurnLeft->Aim->Shoot (45°)",
         AutoCommandFactory.driveBackTurnAimShoot(m_robotDrive, m_limelight, m_shooter, m_belt, 45.0));
+    // Choreo path-following autos (trajectories created in the Choreo app)
+    m_autoChooser.addOption("[Choreo] Drive Forward", m_choreoAutos.driveForward());
+    m_autoChooser.addOption("[Choreo] Drive Back + Shoot", m_choreoAutos.driveBackShoot(m_shooter, m_belt));
+    m_autoChooser.addOption("[Choreo] Intake Path + Shoot", m_choreoAutos.intakeThenShoot(m_intake, m_shooter, m_belt));
 
     SmartDashboard.putData("Autonomous Mode", m_autoChooser);
   }
