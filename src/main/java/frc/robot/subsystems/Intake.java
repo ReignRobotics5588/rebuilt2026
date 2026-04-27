@@ -1,28 +1,23 @@
 package frc.robot.subsystems;
 
-import com.revrobotics.PersistMode;
-
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel;
-import frc.robot.Constants;
-
-import frc.robot.Configs;
-import com.revrobotics.ResetMode; 
-
+import org.littletonrobotics.junction.Logger;
 
 public class Intake extends SubsystemBase {
-  /** Creates a new Intake. */
-  private static SparkMax m_intake = new SparkMax(Constants.DriveConstants.intakeID, SparkLowLevel.MotorType.kBrushless);
+  private final IntakeIO io;
+  private final IntakeIOInputsAutoLogged inputs = new IntakeIOInputsAutoLogged();
 
-  public Intake() {
-    m_intake.configure(Configs.intake.intake_config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+  public Intake(IntakeIO io) {
+    this.io = io;
   }
 
+  @Override
+  public void periodic() {
+    io.updateInputs(inputs);
+    Logger.processInputs("Intake", inputs);
+  }
 
   public void setSpeed(double speed) {
-    m_intake.set(speed);
+    io.setSpeed(speed);
   }
-    
 }

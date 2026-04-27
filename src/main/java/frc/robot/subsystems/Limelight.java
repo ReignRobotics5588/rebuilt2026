@@ -1,348 +1,127 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.PoseEstimate;
-import frc.robot.LimelightHelpers.RawFiducial;
+import org.littletonrobotics.junction.Logger;
 
-/**
- * Limelight 2 vision subsystem for April tag detection and robot localization.
- * Uses the official LimelightHelpers library for reliable vision integration.
- * Provides methods for getting robot pose, April tag information, and alignment data.
- */
 public class Limelight extends SubsystemBase {
-  private final String m_limelightName;
-  private boolean m_hasTarget = false;
-  private double m_targetOffsetX = 0.0;
-  private double m_targetOffsetY = 0.0;
-  private int m_targetID = -1;
-  private int m_desiredTagID = -1;  // -1 means any tag
-  private double m_targetArea = -1;
-  private double m_distance =-1;
- 
-  private PoseEstimate m_latestPoseEstimate = new PoseEstimate();
+  private final VisionIO io;
+  private final VisionIOInputsAutoLogged inputs = new VisionIOInputsAutoLogged();
 
-  public Limelight() {
-    m_limelightName = Constants.LimelightConstants.kLimelightTableName;
-    
-    // Set to AprilTag pipeline
-    LimelightHelpers.setPipelineIndex(m_limelightName, Constants.LimelightConstants.kAprilTagPipeline);
+  private int m_desiredTagID = -1;
 
-    LimelightHelpers.setLEDMode_ForceOff(m_limelightName);
-    
-    // Initialize dashboard
-    initializeDashboard();
-  }
-
-  /**
-   * Initialize dashboard with target tag ID
-   */
-  private void initializeDashboard() {
-    // Initialize desired tag ID key (-1 = any tag)
+  public Limelight(VisionIO io) {
+    this.io = io;
     SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, -1);
-    // Only publish the minimal keys needed for tuning angling and distance
-    SmartDashboard.putBoolean(Constants.LimelightConstants.kDashboardHasTargetKey, false);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, 0.0);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, 0.0);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, 0.0);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetAreaKey, 0.0);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
-    
   }
 
   @Override
   public void periodic() {
-    // Update vision tracking data every cycle
-    updateTargetData();
-    updateTelemetry();
+    io.updateInputs(inputs);
+    Logger.processInputs("Vision", inputs);
+
+    // Keep SmartDashboard values in sync for backwards-compatible dashboard displays
+    SmartDashboard.putBoolean(Constants.LimelightConstants.kDashboardHasTargetKey, inputs.hasTarget);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, inputs.targetOffsetX);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, inputs.targetOffsetY);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetAreaKey, inputs.targetArea);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, inputs.distanceToTarget);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey,
+        inputs.horizontalDistanceToTarget);
   }
 
-  /**
-   * Updates target detection data from Limelight using the official LimelightHelpers
-   */
-  private void updateTargetData() {
-    // Get the latest pose estimate based on alliance color
-    String allianceName = DriverStation.getAlliance().map(Enum::name).orElse("Invalid");
-    PoseEstimate poseEst;
-    
-    if ("RED".equalsIgnoreCase(allianceName)) {
-      poseEst = LimelightHelpers.getBotPoseEstimate_wpiRed(m_limelightName);
-    } else if ("BLUE".equalsIgnoreCase(allianceName)) {
-      poseEst = LimelightHelpers.getBotPoseEstimate_wpiBlue(m_limelightName);
-    } else {
-      // Fall back to generic pose estimate
-      poseEst = LimelightHelpers.getBotPoseEstimate_wpiBlue(m_limelightName);
-    }
-    
-    m_latestPoseEstimate = poseEst;
-    
-    // Check if we have valid targets using official helpers
-    m_hasTarget = LimelightHelpers.getTV(m_limelightName);
-    
-    if (m_hasTarget && poseEst.rawFiducials != null && poseEst.rawFiducials.length > 0) {
-      // Use the first (best) fiducial detected
-      RawFiducial primaryFiducial = poseEst.rawFiducials[0];
-      m_targetID = primaryFiducial.id;
-      m_targetOffsetX = primaryFiducial.txnc;
-      m_targetOffsetY = primaryFiducial.tync;
-      m_targetArea = LimelightHelpers.getTA(m_limelightName); 
-      m_distance = getDistanceToTarget();
-      
-      
-      // If desired tag is set, check if this is the one we want
-      if (m_desiredTagID != -1 && m_targetID != m_desiredTagID) {
-        // Look for the desired tag among all detected fiducials
-        for (RawFiducial fid : poseEst.rawFiducials) {
-          if (fid.id == m_desiredTagID) {
-            m_targetID = (int) fid.id;
-            m_targetOffsetX = fid.txnc;
-            m_targetOffsetY = fid.tync;
-            m_targetArea = fid.ta; 
-            m_distance = getDistanceToTarget();
-            break;
-          }
-        }
-      }
-    } else {
-      m_hasTarget = false;
-      m_targetID = -1;
-      m_targetOffsetX = 0.0;
-      m_targetOffsetY = 0.0;
-      m_targetArea = 0.0;
-      m_distance = 0.0;
-      
-    }
-  }
-
-  /**
-   * Send telemetry data to SmartDashboard/Glass for testing and review
-   */
-  private void updateTelemetry() {
-    // Target detection status
-    // Only publish data required for tuning angling and distance
-    SmartDashboard.putBoolean(Constants.LimelightConstants.kDashboardHasTargetKey, m_hasTarget);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetXKey, m_targetOffsetX);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardOffsetYKey, m_targetOffsetY);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetAreaKey, m_targetArea);
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, m_distance);
-  
-    double[] poseRelative = getRobotPoseRelativeToTarget();
-    if (poseRelative != null && poseRelative.length >= 2) {
-      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, poseRelative[0]);
-      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, poseRelative[1]);
-    } else {
-      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardDistanceKey, 0.0);
-      SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardHorizontalDistanceKey, 0.0);
-    }
-  }
-
-  /**
-   * Check if Limelight detects a valid target
-   * @return true if April tag is detected
-   */
   public boolean hasValidTarget() {
-    return m_hasTarget;
+    return inputs.hasTarget;
   }
 
-  /**
-   * Check if the desired April tag ID is currently detected.
-   * If desired tag ID is -1, any tag is considered valid.
-   * @return true if the correct tag is detected or any tag if ID is -1
-   */
   public boolean hasDesiredTarget() {
-    if (!m_hasTarget) {
-      return false;
-    }
-    // If desired tag ID is -1, accept any tag
-    if (m_desiredTagID == -1) {
-      return true;
-    }
-    // Otherwise check if detected tag matches desired ID
-    return m_targetID == m_desiredTagID;
+    if (!inputs.hasTarget) return false;
+    return m_desiredTagID == -1 || inputs.targetID == m_desiredTagID;
   }
 
-  /**
-   * Get the desired April tag ID from the dashboard (-1 means any tag)
-   * @return desired tag ID or -1 for any tag
-   */
   public int getDesiredTagID() {
     return m_desiredTagID;
   }
 
-  /**
-   * Set the desired April tag ID to target
-   * @param tagID the tag ID to target, or -1 for any tag
-   */
   public void setDesiredTagID(int tagID) {
     m_desiredTagID = tagID;
-    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, m_desiredTagID);
+    io.setDesiredTagID(tagID);
+    SmartDashboard.putNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, tagID);
   }
 
-  /**
-   * Get horizontal offset to target in degrees
-   * Positive = target is to the right
-   * Negative = target is to the left
-   * @return offset in degrees (-27 to 27)
-   */
   public double getTargetOffsetX() {
-    return m_targetOffsetX;
+    return inputs.targetOffsetX;
   }
 
-  /**
-   * Get vertical offset to target in degrees
-   * Positive = target is above cross-hair
-   * Negative = target is below cross-hair
-   * @return offset in degrees (-20.5 to 20.5)
-   */
   public double getTargetOffsetY() {
-    return m_targetOffsetY;
+    return inputs.targetOffsetY;
   }
 
-  /**
-   * Get the ID of the currently detected April tag
-   * @return April tag ID, or -1 if no tag detected
-   */
   public int getTargetID() {
-    return m_targetID;
+    return inputs.targetID;
   }
 
-  /**
-   * Get target area as percentage of image
-   * @return area percentage (0-100)
-   */
   public double getTargetArea() {
-    return LimelightHelpers.getTA(m_limelightName);
+    return inputs.targetArea;
   }
 
-
-  /**
-   * Get pipeline latency in milliseconds
-   * @return latency including capture and processing
-   */
   public double getPipelineLatency() {
-    return LimelightHelpers.getLatency_Pipeline(m_limelightName);
+    return inputs.pipelineLatencyMs;
   }
 
-  /**
-   * Get robot pose in field coordinates from MegaTag 2
-   * Returns [x, y, z, roll, pitch, yaw]
-   * @return array of [x(m), y(m), z(m), roll(deg), pitch(deg), yaw(deg)], or zeros if no target
-   */
-  public double[] getRobotPose() {
-    return LimelightHelpers.getBotPose(m_limelightName);
-  }
-
-  /**
-   * Get robot pose relative to the current AprilTag
-   * Useful for distance/angle calculations to target
-   * @return array of [x(m), y(m), z(m), roll(deg), pitch(deg), yaw(deg)]
-   */
   public double[] getRobotPoseRelativeToTarget() {
-    return LimelightHelpers.getBotPose_TargetSpace(m_limelightName);
+    return inputs.poseRelativeToTarget;
   }
 
-  /**
-   * Get camera pose relative to the current AprilTag
-   * @return array of [x(m), y(m), z(m), roll(deg), pitch(deg), yaw(deg)]
-   */
-  public double[] getCameraPoseRelativeToTarget() {
-    return LimelightHelpers.getCameraPose_TargetSpace(m_limelightName);
-  }
-
-  /**
-   * Get distance to AprilTag in meters (X component from botpose_targetspace)
-   * @return distance in meters
-   */
-  public double getDistanceToTarget() {
-    double[] poseRelativeToTarget = getRobotPoseRelativeToTarget();
-    if (poseRelativeToTarget != null && poseRelativeToTarget.length > 0) {
-      return poseRelativeToTarget[0];  // X component is distance forward
-    }
-    return 0.0;
-  }
-
-  /**
-   * Get horizontal distance to AprilTag in meters (Y component)
-   * @return distance in meters (positive = right, negative = left)
-   */
-  public double getHorizontalDistanceToTarget() {
-    double[] poseRelativeToTarget = getRobotPoseRelativeToTarget();
-    if (poseRelativeToTarget != null && poseRelativeToTarget.length > 1) {
-      return poseRelativeToTarget[1];  // Y component
-    }
-    return 0.0;
-  }
-
-  /**
-   * Set which pipeline to use on Limelight
-   * @param pipeline pipeline ID (0 = default AprilTag)
-   */
-  public void setPipeline(int pipeline) {
-    LimelightHelpers.setPipelineIndex(m_limelightName, pipeline);
-  }
-
-  /**
-   * Get current active pipeline
-   * @return pipeline ID
-   */
-  public int getPipeline() {
-    return (int) LimelightHelpers.getCurrentPipelineIndex(m_limelightName);
-  }
-
-  /**
-   * Enable/disable Limelight processing
-   * @param enabled true to enable LEDs and processing
-   */
-  public void setLimelightActive(boolean enabled) {
-    // LED mode: 0 = pipeline default, 1 = force off, 2 = force blink, 3 = force on
-    if (enabled) {
-      LimelightHelpers.setLEDMode_PipelineControl(m_limelightName);
-    } else {
-      LimelightHelpers.setLEDMode_ForceOff(m_limelightName);
-    }
-  }
-
-  /**
-   * Force Limelight LED on
-   */
-  public void ledOn() {
-    LimelightHelpers.setLEDMode_ForceOn(m_limelightName);
-  }
-
-  /**
-   * Force Limelight LED off
-   */
-  public void ledOff() {
-    LimelightHelpers.setLEDMode_ForceOff(m_limelightName);
-  }
-
-  /**
-   * Get the latest pose estimate from the Limelight including timestamp and tag count
-   * Useful for integrating with robot odometry and pose estimation
-   * @return PoseEstimate object with pose, latency, timestamp, and raw fiducials
-   */
+  /** Returns a stub PoseEstimate — use getRobotPoseRelativeToTarget() for pose data in sim. */
   public PoseEstimate getLatestPoseEstimate() {
-    return m_latestPoseEstimate;
+    return new PoseEstimate();
   }
+
+  public double getDistanceToTarget() {
+    return inputs.distanceToTarget;
+  }
+
+  public double getHorizontalDistanceToTarget() {
+    return inputs.horizontalDistanceToTarget;
+  }
+
+  public void setPipeline(int pipeline) {
+    io.setPipeline(pipeline);
+  }
+
+  public int getPipeline() {
+    return inputs.activePipeline;
+  }
+
+  public void setLimelightActive(boolean enabled) {
+    io.setLEDs(enabled);
+  }
+
+  public void ledOn() {
+    io.setLEDs(true);
+  }
+
+  public void ledOff() {
+    io.setLEDs(false);
+  }
+
+  public double[] getRobotPose() {
+    double[] pose = inputs.poseRelativeToTarget;
+    return (pose != null) ? pose : new double[6];
+  }
+
+  public double[] getCameraPoseRelativeToTarget() {
+    // Camera pose is not tracked through the IO inputs; return zeros in sim
+    return new double[6];
+  }
+
   public String getDebugString() {
-    if (!m_hasTarget) {
-      return "[Limelight] No target detected";
-    }
-    
-    double[] poseRelative = getRobotPoseRelativeToTarget();
-    double distance = (poseRelative != null && poseRelative.length > 0) ? poseRelative[0] : 0.0;
-    return String.format(
-        "[Limelight] ID:%d | Offset:(%.1f°, %.1f°) | Dist:%.2fm | Area:%.1f%%",
-        m_targetID, 
-        m_targetOffsetX, 
-        m_targetOffsetY, 
-        distance,
-        getTargetArea(),
-        m_distance
-    );
+    if (!inputs.hasTarget) return "[Vision] No target";
+    return String.format("[Vision] ID:%d | Offset:(%.1f°, %.1f°) | Dist:%.2fm | Area:%.1f%%",
+        inputs.targetID, inputs.targetOffsetX, inputs.targetOffsetY,
+        inputs.distanceToTarget, inputs.targetArea);
   }
 }

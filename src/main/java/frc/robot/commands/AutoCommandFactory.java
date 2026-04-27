@@ -7,7 +7,7 @@ import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.Limelight;
-import edu.wpi.first.math.MathUtil;
+import frc.robot.Constants.AutoConstants;
 
 /**
  * Factory class for creating autonomous command sequences.
@@ -120,66 +120,30 @@ public class AutoCommandFactory {
       Belt belt,
       double leftTurnDegrees) {
 
-    // Mutable holders so lambdas can capture "by reference"
     final double[] startXY = new double[2];
-    final double[] startHeading = new double[1];
-    final double[] targetHeading = new double[1];
 
-    // Step A: capture starting pose/heading
     Command captureStart = Commands.runOnce(() -> {
       var p = drive.getPose();
       startXY[0] = p.getX();
       startXY[1] = p.getY();
-      startHeading[0] = drive.getHeading();
-      targetHeading[0] = startHeading[0] + leftTurnDegrees;
     });
 
-    // Step B: drive backwards until we've moved ~1.5 meters from start
-    Command driveBack = Commands.run(() -> {
-      // Drive backwards at 30% of max speed
-      drive.drive(-0.3, 0, 0, false);
-    }, drive)
+    Command driveBack = Commands.run(
+        () -> drive.drive(-AutoConstants.kAutoDriveBackSpeed, 0, 0, false), drive)
         .until(() -> {
           var p = drive.getPose();
-          double dx = p.getX() - startXY[0];
-          double dy = p.getY() - startXY[1];
-          double dist = Math.hypot(dx, dy);
-          return dist >= 1.5; // meters
+          return Math.hypot(p.getX() - startXY[0], p.getY() - startXY[1])
+              >= AutoConstants.kAutoDriveBackDistanceMeters;
         })
         .finallyDo(() -> drive.drive(0, 0, 0, false));
 
-    // Step C: turn left by leftTurnDegrees (positive = left). Use a simple
-    // proportional rotation and finish when within 3 degrees.
-    Command turnLeft = Commands.run(() -> {
-      double current = drive.getHeading();
-      double targ = targetHeading[0];
-      double error = targ - current;
-      // Normalize to [-180, 180]
-      while (error > 180) error -= 360;
-      while (error < -180) error += 360;
+    Command turnLeft = new TurnToAngleCommand(
+        drive, leftTurnDegrees, 3.0, AutoConstants.kAutoTurnKP);
 
-      // Simple P controller for rotation command (clamped)
-      double kP = 0.01; // conservative gain
-      double rot = MathUtil.clamp(error * kP, -0.5, 0.5);
-      drive.drive(0, 0, rot, false);
-    }, drive)
-        .until(() -> {
-          double current = drive.getHeading();
-          double targ = targetHeading[0];
-          double error = targ - current;
-          while (error > 180) error -= 360;
-          while (error < -180) error += 360;
-          return Math.abs(error) <= 3.0; // degrees tolerance
-        })
-        .finallyDo(() -> drive.drive(0, 0, 0, false));
-
-    // Step D: fine align using Limelight (existing command)
     Command align = new LimelightAlignCommand(drive, limelight).withTimeout(3.0);
 
-    // Step E: run shooter+belt until interrupted / timeout (shoot for 4s)
     Command shoot = new ShooterBeltCommand(shooter, belt).withTimeout(4.0);
 
-    // Compose everything sequentially
     return Commands.sequence(
         captureStart,
         driveBack,

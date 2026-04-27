@@ -8,24 +8,22 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.RobotBase;
 
-/**
- * The Constants class provides a convenient place for teams to hold robot-wide
- * numerical or boolean
- * constants. This class should not be used for any other purpose. All constants
- * should be declared
- * globally (i.e. public static). Do not put anything functional in this class.
- *
- * <p>
- * It is advised to statically import this class (or one of its inner classes)
- * wherever the
- * constants are needed, to reduce verbosity.
- */
 public final class Constants {
+
+  public enum Mode {
+    REAL,
+    SIM,
+    REPLAY
+  }
+
+  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
   public static final class DriveConstants {
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
-    public static final double kMaxSpeedMetersPerSecond = 25;
+    // 13T pinion MAXSwerve + Neo Vortex: ~5.3 m/s theoretical; 4.5 allows fine control
+    public static final double kMaxSpeedMetersPerSecond = 4.5;
     public static final double kMaxAngularSpeed = 3 * Math.PI; // radians per second
 
     // Chassis configuration
@@ -59,12 +57,6 @@ public final class Constants {
     public static final int kGyroID = 11;
 
     public static final boolean kGyroReversed = false;
-    public static final int intakeID = 15;
-    public static final int beltID = 12;
-    
-    public static final int flywheelID = 17;
-    public static final int indexerID = 14;
-    
   }
 
   public static final class ModuleConstants {
@@ -86,7 +78,6 @@ public final class Constants {
 
   public static final class OIConstants {
     public static final int kDriverControllerPort = 0;
-    public static final int kOperatorControllerPort = 1;
     public static final double kDriveDeadband = 0.1;
   }
 
@@ -100,6 +91,13 @@ public final class Constants {
     public static final double kPYController = 1;
     public static final double kPThetaController = 1;
 
+    // Proportional gain for auto turn-to-angle (normalized rot output per degree of error)
+    public static final double kAutoTurnKP = 0.01;
+    // Drive-back speed (normalized, multiplied by kMaxSpeedMetersPerSecond)
+    public static final double kAutoDriveBackSpeed = 0.3;
+    // Distance to drive back in driveBackTurnAimShoot (meters)
+    public static final double kAutoDriveBackDistanceMeters = 1.5;
+
     // Constraint for the motion profiled robot angle controller
     public static final TrapezoidProfile.Constraints kThetaControllerConstraints = new TrapezoidProfile.Constraints(
         kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared);
@@ -110,28 +108,29 @@ public final class Constants {
     public static final double kFreeSpeedRpm = 6784;
   }
   public static final class IntakeConstants {
+    public static final int kIntakeCanId = 15;
     public static final double kIntakeSpeed = -1;
   }
   public static final class BeltConstants {
+    public static final int kBeltCanId = 12;
     public static final double kBeltSpeed = -0.35;
   }
 
   public static final class ShooterConstants {
-    // Flywheel speed (percent output)
-    public static final double kShooterSpeed = 0.5;
-    
-    // Feeder wheel speed (percent output)
-    public static final double kFeederSpeed = 0.75;
-    
-    // Target RPM for shooter flywheel (SparkFlex)
-    public static final double kShooterTargetRPM = 3000.0;
-    
-    // RPM tolerance for speed control (±RPM)
-    public static final double kShooterRpmTolerance = 50.0;
-  // Hysteresis margin (RPM) to prevent feeder chatter on transient dips
-  public static final double kShooterRpmHysteresis = 50.0;
+    public static final int kFlywheelCanId = 17;
+    public static final int kIndexerCanId = 14;
 
-  public static final double kShooterAutoRPM = 2800;
+    // Feeder wheel speed (percent output, for fallback/non-PID use)
+    public static final double kFeederSpeed = 0.75;
+
+    // Target RPM for teleop shooting
+    public static final double kShooterTargetRPM = 3000.0;
+    // Target RPM for autonomous shooting (lower to ensure spin-up in time)
+    public static final double kShooterAutoRPM = 2800.0;
+
+    // Gate: start feeding when within tolerance; stop when error exceeds tolerance + hysteresis
+    public static final double kShooterRpmTolerance = 50.0;
+    public static final double kShooterRpmHysteresis = 50.0;
     
     // PID tuning parameters for SparkFlex internal controller (flywheel only)
     // Neo Vortex motor: 6784 RPM max, so FF = 1/6784 ≈ 0.000147
