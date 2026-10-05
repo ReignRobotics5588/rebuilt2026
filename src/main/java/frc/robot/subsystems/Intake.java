@@ -1,28 +1,40 @@
 package frc.robot.subsystems;
 
-import com.revrobotics.PersistMode;
+import static edu.wpi.first.units.Units.Amps;
 
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel;
-import frc.robot.Constants;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
 
-import frc.robot.Configs;
-import com.revrobotics.ResetMode; 
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.Constants.DriveConstants;
+
+import yams.motorcontrollers.SmartMotorController;
+import yams.motorcontrollers.SmartMotorControllerConfig;
+import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
+import yams.motorcontrollers.local.SparkWrapper;
 
 public class Intake extends SubsystemBase {
-  /** Creates a new Intake. */
-  private static SparkMax m_intake = new SparkMax(Constants.DriveConstants.intakeID, SparkLowLevel.MotorType.kBrushless);
+
+  private final SparkMax m_intakeSpark = new SparkMax(DriveConstants.intakeID, MotorType.kBrushless);
+  private final SmartMotorController m_motor;
 
   public Intake() {
-    m_intake.configure(Configs.intake.intake_config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-  }
+    SmartMotorControllerConfig config = new SmartMotorControllerConfig(this)
+        .withControlMode(ControlMode.OPEN_LOOP)
+        .withGearing(1.0)
+        .withMotorInverted(false)
+        .withIdleMode(MotorMode.BRAKE)
+        .withStatorCurrentLimit(Amps.of(60))
+        .withTelemetry("Intake", TelemetryVerbosity.LOW);
 
+    m_motor = new SparkWrapper(m_intakeSpark, DCMotor.getNEO(1), config);
+  }
 
   public void setSpeed(double speed) {
-    m_intake.set(speed);
+    m_motor.setDutyCycle(speed);
   }
-    
 }

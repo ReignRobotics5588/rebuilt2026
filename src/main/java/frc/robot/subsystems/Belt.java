@@ -1,25 +1,40 @@
 package frc.robot.subsystems;
 
-import com.revrobotics.PersistMode;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel;
-import frc.robot.Constants;
+import static edu.wpi.first.units.Units.Amps;
 
-import frc.robot.Configs;
-import com.revrobotics.ResetMode;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
+import frc.robot.Constants.DriveConstants;
+
+import yams.motorcontrollers.SmartMotorController;
+import yams.motorcontrollers.SmartMotorControllerConfig;
+import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
+import yams.motorcontrollers.local.SparkWrapper;
 
 public class Belt extends SubsystemBase {
-  /** Creates a new Belt. */
-  private static SparkMax m_belt = new SparkMax(Constants.DriveConstants.beltID, SparkLowLevel.MotorType.kBrushless);
+
+  private final SparkMax m_beltSpark = new SparkMax(DriveConstants.beltID, MotorType.kBrushless);
+  private final SmartMotorController m_motor;
 
   public Belt() {
-    m_belt.configure(Configs.belt.belt_config, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-    
+    SmartMotorControllerConfig config = new SmartMotorControllerConfig(this)
+        .withControlMode(ControlMode.OPEN_LOOP)
+        .withGearing(1.0)
+        .withMotorInverted(false)
+        .withIdleMode(MotorMode.BRAKE)
+        .withStatorCurrentLimit(Amps.of(40))
+        .withTelemetry("Belt", TelemetryVerbosity.LOW);
+
+    m_motor = new SparkWrapper(m_beltSpark, DCMotor.getNEO(1), config);
   }
 
   public void setSpeed(double speed) {
-    m_belt.set(speed);
+    m_motor.setDutyCycle(speed);
   }
-   
 }
