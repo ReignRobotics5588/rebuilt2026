@@ -4,6 +4,7 @@ import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -102,6 +103,16 @@ public class RobotContainer {
   }
 
   public void periodic() {
+    m_limelight.getLatestPoseEstimate().ifPresent(pe -> {
+      if (pe.hasData && pe.tagCount >= 1) {
+        double distScale = (pe.avgTagDist * pe.avgTagDist) / pe.tagCount;
+        m_robotDrive.addVisionMeasurement(
+            pe.pose.toPose2d(),
+            pe.timestampSeconds,
+            VecBuilder.fill(0.1 * distScale, 0.1 * distScale, 9999999));
+      }
+    });
+
     int dashboardTagID = (int) SmartDashboard.getNumber(Constants.LimelightConstants.kDashboardTargetTagIdKey, -1);
     if (dashboardTagID != -1) {
       m_limelight.setDesiredTagID(dashboardTagID);

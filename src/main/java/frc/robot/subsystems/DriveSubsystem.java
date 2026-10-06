@@ -7,8 +7,11 @@ import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
+import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.units.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
@@ -106,6 +109,10 @@ public class DriveSubsystem extends SubsystemBase {
 
   public ChassisSpeeds getRobotRelativeSpeed() {
     return m_swerveDrive.getRobotRelativeSpeed();
+  }
+
+  public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds, Matrix<N3, N1> stdDevs) {
+    m_swerveDrive.addVisionMeasurement(visionPose, timestampSeconds, stdDevs);
   }
 
   public void zeroHeading() {
