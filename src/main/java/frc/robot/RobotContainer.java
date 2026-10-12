@@ -24,30 +24,23 @@ import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.Shooter;
+import frc.robot.subsystems.io.BeltIOYAMS;
+import frc.robot.subsystems.io.DriveIOYAMS;
+import frc.robot.subsystems.io.IntakeIOYAMS;
+import frc.robot.subsystems.io.ShooterIOYAMS;
 
 public class RobotContainer {
 
-  public static final DriveSubsystem m_robotDrive = new DriveSubsystem();
-  public static final Intake m_intake = new Intake();
-  public static final Shooter m_shooter = new Shooter();
-  public static final Belt m_belt = new Belt();
+  public static final DriveSubsystem m_robotDrive;
+  public static final Intake m_intake;
+  public static final Shooter m_shooter;
+  public static final Belt m_belt;
   public static final Limelight m_limelight = new Limelight();
 
-  XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
-
-  private final SendableChooser<Command> m_autoChooser;
-
-  public RobotContainer() {
-    registerNamedCommands();
-    configureButtonBindings();
-    configureDefaultCommands();
-    DriverStation.silenceJoystickConnectionWarning(true);
-
-    m_autoChooser = AutoBuilder.buildAutoChooser();
-    SmartDashboard.putData("Autonomous Mode", m_autoChooser);
-  }
-
-  private void registerNamedCommands() {
+  static {
+    m_intake = new Intake(new IntakeIOYAMS());
+    m_shooter = new Shooter(new ShooterIOYAMS());
+    m_belt = new Belt(new BeltIOYAMS());
     NamedCommands.registerCommand("IntakeOn",
         Commands.runOnce(() -> m_intake.setSpeed(Constants.IntakeConstants.kIntakeSpeed), m_intake));
     NamedCommands.registerCommand("IntakeOff",
@@ -58,8 +51,22 @@ public class RobotContainer {
         Commands.runOnce(() -> m_belt.setSpeed(0), m_belt));
     NamedCommands.registerCommand("ShootAuto",
         new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, ShooterConstants.kShooterAutoRPM));
+    m_robotDrive = new DriveSubsystem(new DriveIOYAMS());
     NamedCommands.registerCommand("LimelightAlign",
         new LimelightAlignCommand(m_robotDrive, m_limelight));
+  }
+
+  XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
+
+  private final SendableChooser<Command> m_autoChooser;
+
+  public RobotContainer() {
+    configureButtonBindings();
+    configureDefaultCommands();
+    DriverStation.silenceJoystickConnectionWarning(true);
+
+    m_autoChooser = AutoBuilder.buildAutoChooser();
+    SmartDashboard.putData("Autonomous Mode", m_autoChooser);
   }
 
   private void configureDefaultCommands() {

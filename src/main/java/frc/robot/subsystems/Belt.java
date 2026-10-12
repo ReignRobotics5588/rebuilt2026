@@ -1,40 +1,29 @@
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.Amps;
+import org.littletonrobotics.junction.Logger;
 
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import frc.robot.Constants.DriveConstants;
-
-import yams.motorcontrollers.SmartMotorController;
-import yams.motorcontrollers.SmartMotorControllerConfig;
-import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
-import yams.motorcontrollers.local.SparkWrapper;
+import frc.robot.subsystems.io.BeltIO;
+import frc.robot.subsystems.io.BeltIOInputsAutoLogged;
 
 public class Belt extends SubsystemBase {
 
-  private final SparkMax m_beltSpark = new SparkMax(DriveConstants.beltID, MotorType.kBrushless);
-  private final SmartMotorController m_motor;
+  private final BeltIO m_io;
+  private final BeltIOInputsAutoLogged m_inputs = new BeltIOInputsAutoLogged();
 
-  public Belt() {
-    SmartMotorControllerConfig config = new SmartMotorControllerConfig(this)
-        .withControlMode(ControlMode.OPEN_LOOP)
-        .withGearing(1.0)
-        .withMotorInverted(false)
-        .withIdleMode(MotorMode.BRAKE)
-        .withStatorCurrentLimit(Amps.of(40))
-        .withTelemetry("Belt", TelemetryVerbosity.LOW);
+  public Belt(BeltIO io) {
+    m_io = io;
+    m_io.init(this);
+  }
 
-    m_motor = new SparkWrapper(m_beltSpark, DCMotor.getNEO(1), config);
+  @Override
+  public void periodic() {
+    m_io.updateInputs(m_inputs);
+    Logger.processInputs("Belt", m_inputs);
   }
 
   public void setSpeed(double speed) {
-    m_motor.setDutyCycle(speed);
+    m_io.setDutyCycle(speed);
   }
 }
