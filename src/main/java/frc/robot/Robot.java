@@ -1,7 +1,5 @@
 package frc.robot;
 
-import com.pathplanner.lib.commands.PathPlannerAuto;
-
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
@@ -16,6 +14,14 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void robotInit() {
+    // Record which code produced each log
+    Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
+    Logger.recordMetadata("GitSHA", BuildConstants.GIT_SHA);
+    Logger.recordMetadata("GitDate", BuildConstants.GIT_DATE);
+    Logger.recordMetadata("GitBranch", BuildConstants.GIT_BRANCH);
+    Logger.recordMetadata("BuildDate", BuildConstants.BUILD_DATE);
+    Logger.recordMetadata("GitDirty", BuildConstants.DIRTY == 1 ? "Uncommitted changes" : "All changes committed");
+
     Logger.addDataReceiver(new NT4Publisher());
     if (isReal()) {
       Logger.addDataReceiver(new WPILOGWriter());
@@ -41,13 +47,9 @@ public class Robot extends LoggedRobot {
   public void autonomousInit() {
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
+    // Odometry reset is handled by PathPlanner ("resetOdom" in the .auto), which
+    // flips the starting pose for the red alliance.
     if (m_autonomousCommand != null) {
-      if (m_autonomousCommand instanceof PathPlannerAuto) {
-        var startingPose = ((PathPlannerAuto) m_autonomousCommand).getStartingPose();
-        if (startingPose != null) {
-          RobotContainer.m_robotDrive.resetOdometry(startingPose);
-        }
-      }
       CommandScheduler.getInstance().schedule(m_autonomousCommand);
     }
   }

@@ -2,6 +2,8 @@ package frc.robot.subsystems.io;
 
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.RPM;
+import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.Volts;
 
 import com.revrobotics.spark.SparkFlex;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
@@ -11,7 +13,7 @@ import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants;
 import frc.robot.Constants.ShooterConstants;
 
 import yams.motorcontrollers.SmartMotorController;
@@ -28,8 +30,8 @@ public class ShooterIOYAMS implements ShooterIO {
 
   @Override
   public void init(SubsystemBase subsystem) {
-    SparkFlex flywheelSpark = new SparkFlex(DriveConstants.flywheelID, MotorType.kBrushless);
-    SparkMax indexerSpark = new SparkMax(DriveConstants.indexerID, MotorType.kBrushless);
+    SparkFlex flywheelSpark = new SparkFlex(ShooterConstants.kFlywheelCanId, MotorType.kBrushless);
+    SparkMax indexerSpark = new SparkMax(ShooterConstants.kIndexerCanId, MotorType.kBrushless);
 
     SmartMotorControllerConfig flywheelConfig = new SmartMotorControllerConfig(subsystem)
         .withControlMode(ControlMode.CLOSED_LOOP)
@@ -38,13 +40,11 @@ public class ShooterIOYAMS implements ShooterIO {
             ShooterConstants.kFlywheelP,
             ShooterConstants.kFlywheelI,
             ShooterConstants.kFlywheelD)
-        .withSimClosedLoopController(0.1, 0.0, 0.0)
         .withFeedforward(new SimpleMotorFeedforward(0.0, ShooterConstants.kFlywheelFF, 0.0))
-        .withSimFeedforward(new SimpleMotorFeedforward(0.0, 0.0169, 0.0))
         .withMotorInverted(false)
         .withIdleMode(MotorMode.COAST)
         .withStatorCurrentLimit(Amps.of(ShooterConstants.kFlywheelCurrentLimit))
-        .withTelemetry("Shooter/Flywheel", TelemetryVerbosity.HIGH);
+        .withTelemetry("Shooter/Flywheel", Constants.kTelemetryVerbosity);
 
     m_flywheel = new SparkWrapper(flywheelSpark, DCMotor.getNeoVortex(1), flywheelConfig);
 
@@ -62,7 +62,9 @@ public class ShooterIOYAMS implements ShooterIO {
   @Override
   public void updateInputs(ShooterIOInputs inputs) {
     m_flywheel.updateTelemetry();
+    inputs.flywheelPositionRotations = m_flywheel.getMechanismPosition().in(Rotations);
     inputs.flywheelVelocityRPM = m_flywheel.getMechanismVelocity().in(RPM);
+    inputs.flywheelAppliedVolts = m_flywheel.getVoltage().in(Volts);
     inputs.flywheelAppliedDutyCycle = m_flywheel.getDutyCycle();
     inputs.flywheelCurrentAmps = m_flywheel.getStatorCurrent().in(Amps);
     inputs.indexerAppliedDutyCycle = m_indexer.getDutyCycle();
@@ -77,6 +79,11 @@ public class ShooterIOYAMS implements ShooterIO {
   @Override
   public void setFlywheelDutyCycle(double speed) {
     m_flywheel.setDutyCycle(speed);
+  }
+
+  @Override
+  public void setFlywheelVoltage(double volts) {
+    m_flywheel.setVoltage(Volts.of(volts));
   }
 
   @Override

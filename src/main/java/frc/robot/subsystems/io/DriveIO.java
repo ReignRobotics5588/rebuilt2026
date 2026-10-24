@@ -16,6 +16,10 @@ public interface DriveIO {
     public double chassisVyMetersPerSec = 0.0;
     public double chassisOmegaRadPerSec = 0.0;
     public double gyroYawDegrees = 0.0;
+    // Per module, in swervedrive.json order (FL, FR, BL, BR)
+    public double[] drivePositionsMeters = new double[4];
+    public double[] driveVelocitiesMetersPerSec = new double[4];
+    public double[] driveAppliedVolts = new double[4];
   }
 
   default void init(SubsystemBase subsystem) {}
@@ -33,6 +37,9 @@ public interface DriveIO {
       Matrix<N3, N1> stdDevs) {}
 
   default void zeroHeading() {}
+
+  /** Points every module forward and applies an open-loop drive voltage (SysId). */
+  default void runDriveCharacterization(double volts) {}
 
   default void simIterate() {}
 }

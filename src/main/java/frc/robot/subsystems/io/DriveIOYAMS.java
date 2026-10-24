@@ -18,10 +18,13 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.Constants;
+
 import swervelib.parser.SwerveParser;
 import yams.mechanisms.config.SwerveDriveConfig;
 import yams.mechanisms.swerve.SwerveDrive;
-import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
+import yams.mechanisms.swerve.SwerveModule;
+import yams.motorcontrollers.SmartMotorController;
 
 public class DriveIOYAMS implements DriveIO {
 
@@ -33,7 +36,7 @@ public class DriveIOYAMS implements DriveIO {
         .withSubsystem(subsystem)
         .withTranslationController(new PIDController(1.0, 0.0, 0.0))
         .withRotationController(new PIDController(1.0, 0.0, 0.0))
-        .withTelemetry("Swerve", TelemetryVerbosity.HIGH);
+        .withTelemetry("Swerve", Constants.kTelemetryVerbosity);
 
     SwerveParser.parse(new File(Filesystem.getDeployDirectory(), "swerve"));
     m_swerveDrive = SwerveParser.createSwerveDrive(driveConfig);
@@ -75,6 +78,22 @@ public class DriveIOYAMS implements DriveIO {
     inputs.chassisVyMetersPerSec = speeds.vyMetersPerSecond;
     inputs.chassisOmegaRadPerSec = speeds.omegaRadiansPerSecond;
     inputs.gyroYawDegrees = m_swerveDrive.getGyroAngle().in(Units.Degrees);
+
+    SwerveModule[] modules = m_swerveDrive.getModules();
+    for (int i = 0; i < modules.length; i++) {
+      SmartMotorController driveMotor = modules[i].getDriveMotorController();
+      inputs.drivePositionsMeters[i] = driveMotor.getMeasurementPosition().in(Units.Meters);
+      inputs.driveVelocitiesMetersPerSec[i] = driveMotor.getMeasurementVelocity().in(Units.MetersPerSecond);
+      inputs.driveAppliedVolts[i] = driveMotor.getVoltage().in(Units.Volts);
+    }
+  }
+
+  @Override
+  public void runDriveCharacterization(double volts) {
+    for (SwerveModule module : m_swerveDrive.getModules()) {
+      module.getAzimuthMotorController().setPosition(Units.Degrees.of(0));
+      module.getDriveMotorController().setVoltage(Units.Volts.of(volts));
+    }
   }
 
   @Override

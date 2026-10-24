@@ -69,12 +69,11 @@ public class LimelightAlignCommand extends Command {
     // tx = 0 means we're aligned
     double rotationSpeed = m_headingController.calculate(offsetX, 0.0);
     
-    // Clamp rotation speed to maximum allowed angular velocity
-    rotationSpeed = MathUtil.clamp(
-        rotationSpeed,
-        -Constants.LimelightConstants.kMaxAlignmentAngularVelocity,
-        Constants.LimelightConstants.kMaxAlignmentAngularVelocity
-    );
+    // Clamp rotation speed to maximum allowed angular velocity. drive() takes a
+    // fraction of kMaxAngularSpeed, so convert the rad/s limit to that scale.
+    double maxRotation = Constants.LimelightConstants.kMaxAlignmentAngularVelocity
+        / Constants.DriveConstants.kMaxAngularSpeed;
+    rotationSpeed = MathUtil.clamp(rotationSpeed, -maxRotation, maxRotation);
     
     // Drive command: no translation, only rotation
     m_drive.drive(0, 0, rotationSpeed, false);
@@ -82,7 +81,7 @@ public class LimelightAlignCommand extends Command {
   SmartDashboard.putString(Constants.LimelightConstants.kDashboardDebugKey, String.format(
     "[LimelightAlignCommand] Offset: %.2f° | Rotation: %.2f rad/s | %s",
     offsetX,
-    rotationSpeed,
+    rotationSpeed * Constants.DriveConstants.kMaxAngularSpeed,
     m_limelight.getDebugString()
   ));
   }

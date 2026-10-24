@@ -8,7 +8,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.IntakeConstants;
 
 import yams.motorcontrollers.SmartMotorController;
 import yams.motorcontrollers.SmartMotorControllerConfig;
@@ -23,7 +23,7 @@ public class IntakeIOYAMS implements IntakeIO {
 
   @Override
   public void init(SubsystemBase subsystem) {
-    SparkMax spark = new SparkMax(DriveConstants.intakeID, MotorType.kBrushless);
+    SparkMax spark = new SparkMax(IntakeConstants.kCanId, MotorType.kBrushless);
 
     SmartMotorControllerConfig config = new SmartMotorControllerConfig(subsystem)
         .withControlMode(ControlMode.OPEN_LOOP)

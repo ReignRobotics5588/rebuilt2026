@@ -6,16 +6,20 @@ import com.pathplanner.lib.auto.NamedCommands;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
+import frc.robot.Constants.AutoConstants;
+import frc.robot.Constants.IntakeConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.Constants.ShooterConstants;
+import frc.robot.commands.AimAndShootCommand;
 import frc.robot.commands.IntakeBeltCommand;
 import frc.robot.commands.IntakeThenShootAutoCommand;
 import frc.robot.commands.LimelightAlignCommand;
@@ -41,27 +45,37 @@ public class RobotContainer {
     m_intake = new Intake(new IntakeIOYAMS());
     m_shooter = new Shooter(new ShooterIOYAMS());
     m_belt = new Belt(new BeltIOYAMS());
-    NamedCommands.registerCommand("IntakeOn",
-        Commands.runOnce(() -> m_intake.setSpeed(Constants.IntakeConstants.kIntakeSpeed), m_intake));
-    NamedCommands.registerCommand("IntakeOff",
+    NamedCommands.registerCommand(AutoConstants.kIntakeOn,
+        Commands.runOnce(() -> m_intake.setSpeed(IntakeConstants.kIntakeSpeed), m_intake));
+    NamedCommands.registerCommand(AutoConstants.kIntakeOff,
         Commands.runOnce(() -> m_intake.setSpeed(0), m_intake));
-    NamedCommands.registerCommand("BeltOn",
+    NamedCommands.registerCommand(AutoConstants.kBeltOn,
         Commands.runOnce(() -> m_belt.setSpeed(Constants.BeltConstants.kBeltSpeed), m_belt));
-    NamedCommands.registerCommand("BeltOff",
+    NamedCommands.registerCommand(AutoConstants.kBeltOff,
         Commands.runOnce(() -> m_belt.setSpeed(0), m_belt));
-    NamedCommands.registerCommand("ShootAuto",
-        new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, ShooterConstants.kShooterAutoRPM));
+    NamedCommands.registerCommand(AutoConstants.kShootAuto,
+        new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, ShooterConstants.kShooterAutoRPM)
+            .withTimeout(AutoConstants.kShootTimeoutSeconds));
+    // DriveSubsystem must exist before AutoBuilder-dependent and drive commands
     m_robotDrive = new DriveSubsystem(new DriveIOYAMS());
-    NamedCommands.registerCommand("LimelightAlign",
+    NamedCommands.registerCommand(AutoConstants.kAimAndShoot,
+        new AimAndShootCommand(m_robotDrive, m_shooter, m_intake, m_belt)
+            .finishAfterFeeding(AutoConstants.kShootFeedSeconds)
+            .withTimeout(AutoConstants.kShootTimeoutSeconds));
+    NamedCommands.registerCommand(AutoConstants.kLimelightAlign,
         new LimelightAlignCommand(m_robotDrive, m_limelight));
   }
 
-  XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
+  private final CommandXboxController m_driverController =
+      new CommandXboxController(OIConstants.kDriverControllerPort);
+  private final CommandXboxController m_operatorController =
+      new CommandXboxController(OIConstants.kOperatorControllerPort);
 
   private final SendableChooser<Command> m_autoChooser;
 
   public RobotContainer() {
     configureButtonBindings();
+    configureSysIdBindings();
     configureDefaultCommands();
     DriverStation.silenceJoystickConnectionWarning(true);
 
@@ -69,9 +83,22 @@ public class RobotContainer {
     SmartDashboard.putData("Autonomous Mode", m_autoChooser);
   }
 
+  private double driverForward() {
+    return -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband);
+  }
+
+  private double driverLeft() {
+    return -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband);
+  }
+
   private void configureDefaultCommands() {
+    // Skipped in auto so the IntakeOn/IntakeOff named commands aren't undone
     m_intake.setDefaultCommand(
-        new RunCommand(() -> m_intake.setSpeed(0), m_intake));
+        new RunCommand(() -> {
+          if (!DriverStation.isAutonomous()) {
+            m_intake.setSpeed(0);
+          }
+        }, m_intake));
 
     m_shooter.setDefaultCommand(
         new RunCommand(() -> {
@@ -82,36 +109,90 @@ public class RobotContainer {
     m_robotDrive.setDefaultCommand(
         new RunCommand(
             () -> m_robotDrive.drive(
-                -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
+                driverForward(),
+                driverLeft(),
                 -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
                 true),
             m_robotDrive));
   }
 
   private void configureButtonBindings() {
-    new JoystickButton(m_driverController, XboxController.Button.kX.value)
+    Trigger notTest = new Trigger(DriverStation::isTest).negate();
+
+    // ---- Driver ----
+    m_driverController.x()
         .whileTrue(new RunCommand(() -> m_robotDrive.setX(), m_robotDrive));
 
-    new JoystickButton(m_driverController, XboxController.Button.kA.value)
-        .toggleOnTrue(new IntakeBeltCommand(m_intake, m_belt));
-
-    new JoystickButton(m_driverController, XboxController.Button.kLeftBumper.value)
-        .toggleOnTrue(new RunCommand(() -> m_intake.setSpeed(0.7), m_intake));
-
-    new JoystickButton(m_driverController, XboxController.Button.kRightBumper.value)
-        .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, 3200));
-
-    new JoystickButton(m_driverController, XboxController.Button.kY.value)
-        .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt, ShooterConstants.kShooterAutoRPM));
-
-    new JoystickButton(m_driverController, XboxController.Button.kB.value)
+    m_driverController.b()
         .whileTrue(new LimelightAlignCommand(m_robotDrive, m_limelight));
+
+    // Hold to aim at the hub while driving; shoots at the distance-based RPM
+    m_driverController.rightTrigger()
+        .whileTrue(new AimAndShootCommand(m_robotDrive, m_shooter, m_intake, m_belt,
+            this::driverForward, this::driverLeft));
+
+    // Re-zero field-relative driving: point the robot away from the driver first
+    m_driverController.start()
+        .onTrue(Commands.runOnce(() -> m_robotDrive.zeroHeading()));
+
+    // ---- Mechanisms: on both controllers until the operator role is settled ----
+    for (CommandXboxController controller : new CommandXboxController[] {m_driverController, m_operatorController}) {
+      controller.a().and(notTest)
+          .toggleOnTrue(new IntakeBeltCommand(m_intake, m_belt));
+
+      // Spit out ("puke")
+      controller.leftBumper().and(notTest)
+          .toggleOnTrue(Commands.startEnd(
+              () -> m_intake.setSpeed(IntakeConstants.kEjectSpeed),
+              () -> m_intake.setSpeed(0),
+              m_intake));
+
+      // Close shot
+      controller.rightBumper().and(notTest)
+          .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt,
+              ShooterConstants.kShooterCloseRPM));
+
+      // Shoot at wall
+      controller.y().and(notTest)
+          .toggleOnTrue(new IntakeThenShootAutoCommand(m_intake, m_shooter, m_belt,
+              ShooterConstants.kShooterAutoRPM));
+    }
+
+    // Operator: hold to pre-spin the flywheel for the current hub distance
+    m_operatorController.x().and(notTest)
+        .whileTrue(Commands.run(() -> m_shooter.setFlywheelRPM(Shooter.getRPMForDistance(
+            FieldConstants.getAllianceHubCenter().getDistance(m_robotDrive.getPose().getTranslation()))),
+            m_shooter));
+  }
+
+  /**
+   * SysId characterization, Test mode only, operator controller. Hold left bumper
+   * for the flywheel, otherwise the drive. POV up/down = quasistatic fwd/rev,
+   * POV right/left = dynamic fwd/rev. Hold until the routine has room/time to finish.
+   */
+  private void configureSysIdBindings() {
+    Trigger test = new Trigger(DriverStation::isTest);
+    Trigger flywheel = test.and(m_operatorController.leftBumper());
+    Trigger drive = test.and(m_operatorController.leftBumper().negate());
+
+    drive.and(m_operatorController.povUp()).whileTrue(m_robotDrive.sysIdQuasistatic(Direction.kForward));
+    drive.and(m_operatorController.povDown()).whileTrue(m_robotDrive.sysIdQuasistatic(Direction.kReverse));
+    drive.and(m_operatorController.povRight()).whileTrue(m_robotDrive.sysIdDynamic(Direction.kForward));
+    drive.and(m_operatorController.povLeft()).whileTrue(m_robotDrive.sysIdDynamic(Direction.kReverse));
+
+    flywheel.and(m_operatorController.povUp()).whileTrue(m_shooter.sysIdQuasistatic(Direction.kForward));
+    flywheel.and(m_operatorController.povDown()).whileTrue(m_shooter.sysIdQuasistatic(Direction.kReverse));
+    flywheel.and(m_operatorController.povRight()).whileTrue(m_shooter.sysIdDynamic(Direction.kForward));
+    flywheel.and(m_operatorController.povLeft()).whileTrue(m_shooter.sysIdDynamic(Direction.kReverse));
   }
 
   public void periodic() {
+    double yawRate = m_robotDrive.getRobotRelativeSpeed().omegaRadiansPerSecond;
+    m_limelight.setRobotOrientation(m_robotDrive.getPose().getRotation(), yawRate);
+
     m_limelight.getLatestPoseEstimate().ifPresent(pe -> {
-      if (pe.hasData && pe.tagCount >= 1) {
+      // MegaTag2 is unreliable while spinning faster than ~720 deg/s
+      if (pe.hasData && pe.tagCount >= 1 && Math.abs(yawRate) < 4 * Math.PI) {
         double distScale = (pe.avgTagDist * pe.avgTagDist) / pe.tagCount;
         m_robotDrive.addVisionMeasurement(
             pe.pose.toPose2d(),
@@ -136,6 +217,8 @@ public class RobotContainer {
 
     SmartDashboard.putNumber("Shooter/Current RPM", m_shooter.getFlywheelRPM());
     SmartDashboard.putNumber("Shooter/Target RPM", m_shooter.getTargetRPM());
+    SmartDashboard.putNumber("Shooter/Hub Distance (m)",
+        FieldConstants.getAllianceHubCenter().getDistance(m_robotDrive.getPose().getTranslation()));
   }
 
   public Command getAutonomousCommand() {

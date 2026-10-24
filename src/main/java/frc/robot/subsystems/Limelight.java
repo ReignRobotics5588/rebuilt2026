@@ -1,5 +1,9 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -8,6 +12,7 @@ import frc.robot.Constants;
 import limelight.networktables.LimelightPoseEstimator;
 import limelight.networktables.LimelightPoseEstimator.EstimationMode;
 import limelight.networktables.LimelightSettings.LEDMode;
+import limelight.networktables.Orientation3d;
 import limelight.networktables.PoseEstimate;
 import limelight.results.RawFiducial;
 
@@ -55,7 +60,8 @@ public class Limelight extends SubsystemBase {
   }
 
   private void updateTargetData() {
-    m_latestPoseEstimate = m_poseEstimator.getAlliancePoseEstimate();
+    // Blue-origin pose, matching odometry and PathPlanner on both alliances
+    m_latestPoseEstimate = m_poseEstimator.getPoseEstimate();
 
     var targetData = m_limelight.getData().targetData;
     m_hasTarget = targetData.getTargetStatus();
@@ -210,6 +216,15 @@ public class Limelight extends SubsystemBase {
 
   public Optional<PoseEstimate> getLatestPoseEstimate() {
     return m_latestPoseEstimate;
+  }
+
+  /** MegaTag2 needs the robot's field heading every loop to produce a pose. */
+  public void setRobotOrientation(Rotation2d heading, double yawRateRadPerSec) {
+    m_limelight.getSettings().withRobotOrientation(new Orientation3d(
+        new Rotation3d(0, 0, heading.getRadians()),
+        RadiansPerSecond.of(yawRateRadPerSec),
+        RadiansPerSecond.of(0),
+        RadiansPerSecond.of(0)));
   }
 
   public String getDebugString() {

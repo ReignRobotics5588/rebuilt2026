@@ -68,15 +68,18 @@ public class IntakeThenShootAutoCommand extends Command {
   @Override
   public void execute() {
     // Check if shooter has reached target RPM to start indexing and belt
-    if (m_shooter.getFlywheelRPM() >= m_shooterRPMTarget -350) {
+    if (m_shooter.isReadyToFeed(m_shooterRPMTarget)) {
       // Flywheel is up to speed — enable indexer and belt together
       m_shooter.setIndexerSpeed(Constants.ShooterConstants.kFeederSpeed);
       m_belt.setSpeed(Constants.BeltConstants.kBeltSpeed);
       m_indexerStarted = true;
-      SmartDashboard.putBoolean("Auto/Indexer Started", true);
-    }else{
-        m_shooter.setIndexerSpeed(0);
+    } else {
+      // Flywheel dipped — stop both so the belt doesn't jam pieces into a stopped indexer
+      m_shooter.setIndexerSpeed(0);
+      m_belt.setSpeed(0);
+      m_indexerStarted = false;
     }
+    SmartDashboard.putBoolean("Auto/Indexer Started", m_indexerStarted);
     
     // Update dashboard with current RPM
     SmartDashboard.putNumber("Auto/Current Flywheel RPM", m_shooter.getFlywheelRPM());

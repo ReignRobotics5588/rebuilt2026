@@ -4,11 +4,13 @@
 
 package frc.robot;
 
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.RobotBase;
+import java.util.List;
+import java.util.Map;
+
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap;
+
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide
@@ -18,79 +20,26 @@ import edu.wpi.first.wpilibj.RobotBase;
  * globally (i.e. public static). Do not put anything functional in this class.
  *
  * <p>
- * It is advised to statically import this class (or one of its inner classes)
- * wherever the
- * constants are needed, to reduce verbosity.
+ * Swerve hardware (CAN IDs, gearing, encoder offsets, module locations) lives in
+ * src/main/deploy/swerve/*.json, and PathPlanner robot settings in
+ * src/main/deploy/pathplanner/settings.json.
  */
 public final class Constants {
-  public enum Mode {
-    REAL,
-    SIM,
-    REPLAY
-  }
-
-  public static final Mode currentMode = RobotBase.isReal() ? Mode.REAL : Mode.SIM;
+  // YAMS telemetry detail. HIGH publishes every motor signal over NetworkTables,
+  // which costs CAN and loop time on the roboRIO; switch to HIGH only while debugging.
+  public static final TelemetryVerbosity kTelemetryVerbosity = TelemetryVerbosity.LOW;
 
   public static final class DriveConstants {
     // Driving Parameters - Note that these are not the maximum capable speeds of
     // the robot, rather the allowed maximum speeds
-    public static final double kMaxSpeedMetersPerSecond = 5.45;
+    // NEO free speed with 13T pinion is ~4.46 m/s
+    public static final double kMaxSpeedMetersPerSecond = 4.4;
     public static final double kMaxAngularSpeed = 3 * Math.PI; // radians per second
 
-    // Chassis configuration
-    public static final double kTrackWidth = Units.inchesToMeters(27);
-    // Distance between centers of right and left wheels on robot
-    public static final double kWheelBase = Units.inchesToMeters(27);
-    // Distance between front and back wheels on robot
-    public static final SwerveDriveKinematics kDriveKinematics = new SwerveDriveKinematics(
-        new Translation2d(kWheelBase / 2, kTrackWidth / 2),
-        new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
-        new Translation2d(-kWheelBase / 2, kTrackWidth / 2),
-        new Translation2d(-kWheelBase / 2, -kTrackWidth / 2));
-
-    // Angular offsets of the modules relative to the chassis in radians
-    public static final double kFrontLeftChassisAngularOffset = -Math.PI / 2;
-    public static final double kFrontRightChassisAngularOffset = 0;
-    public static final double kBackLeftChassisAngularOffset = Math.PI;
-    public static final double kBackRightChassisAngularOffset = Math.PI / 2;
-
-    // SPARK MAX CAN IDs
-    public static final int kFrontLeftDrivingCanId = 2;
-    public static final int kRearLeftDrivingCanId = 8;
-    public static final int kFrontRightDrivingCanId = 4;
-    public static final int kRearRightDrivingCanId = 6;
-
-    public static final int kFrontLeftTurningCanId = 9;
-    public static final int kRearLeftTurningCanId = 7;
-    public static final int kRearRightTurningCanId = 5;
-    public static final int kFrontRightTurningCanId = 13;
-
-    public static final int kGyroID = 11;
-
-    public static final boolean kGyroReversed = false;
-    public static final int intakeID = 15;
-    public static final int beltID = 12;
-    
-    public static final int flywheelID = 17;
-    public static final int indexerID = 14;
-    
-  }
-
-  public static final class ModuleConstants {
-    // The MAXSwerve module can be configured with one of three pinion gears: 12T,
-    // 13T, or 14T. This changes the drive speed of the module (a pinion gear with
-    // more teeth will result in a robot that drives faster).
-    public static final int kDrivingMotorPinionTeeth = 13;
-
-    // Calculations required for driving motor conversion factors and feed forward
-    public static final double kDrivingMotorFreeSpeedRps = NeoMotorConstants.kFreeSpeedRpm / 60;
-    public static final double kWheelDiameterMeters = 0.0762;
-    public static final double kWheelCircumferenceMeters = kWheelDiameterMeters * Math.PI;
-    // 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15
-    // teeth on the bevel pinion
-    public static final double kDrivingMotorReduction = (45.0 * 22) / (kDrivingMotorPinionTeeth * 15);
-    public static final double kDriveWheelFreeSpeedRps = (kDrivingMotorFreeSpeedRps * kWheelCircumferenceMeters)
-        / kDrivingMotorReduction;
+    // Aim-while-driving heading controller (output rad/s per rad of heading error)
+    public static final double kAimP = 5.0;
+    public static final double kAimD = 0.0;
+    public static final double kAimToleranceDegrees = 3.0;
   }
 
   public static final class OIConstants {
@@ -100,115 +49,109 @@ public final class Constants {
   }
 
   public static final class AutoConstants {
-    public static final double kMaxSpeedMetersPerSecond = 3;
-    public static final double kMaxAccelerationMetersPerSecondSquared = 3;
-    public static final double kMaxAngularSpeedRadiansPerSecond = Math.PI;
-    public static final double kMaxAngularSpeedRadiansPerSecondSquared = Math.PI;
+    // PathPlanner NamedCommands. Names must match the .auto/.path files exactly
+    // (checked by DeployConfigTest).
+    public static final String kIntakeOn = "IntakeOn";
+    public static final String kIntakeOff = "IntakeOff";
+    public static final String kBeltOn = "BeltOn";
+    public static final String kBeltOff = "BeltOff";
+    public static final String kShootAuto = "ShootAuto";
+    public static final String kAimAndShoot = "AimAndShoot";
+    public static final String kLimelightAlign = "LimelightAlign";
+    public static final List<String> kNamedCommands = List.of(
+        kIntakeOn, kIntakeOff, kBeltOn, kBeltOff, kShootAuto, kAimAndShoot, kLimelightAlign);
 
-    public static final double kPXController = 1;
-    public static final double kPYController = 1;
-    public static final double kPThetaController = 1;
-
-    // Constraint for the motion profiled robot angle controller
-    public static final TrapezoidProfile.Constraints kThetaControllerConstraints = new TrapezoidProfile.Constraints(
-        kMaxAngularSpeedRadiansPerSecond, kMaxAngularSpeedRadiansPerSecondSquared);
+    // Auto shots end after feeding this long; the timeout is a safety cap in case
+    // the flywheel never reaches speed or the robot never aims
+    public static final double kShootFeedSeconds = 1.5;
+    public static final double kShootTimeoutSeconds = 6.0;
   }
 
-  public static final class NeoMotorConstants {
-    // Neo Vortex free speed RPM (6784 RPM, not regular Neo which is 5676)
-    public static final double kFreeSpeedRpm = 6784;
-  }
   public static final class IntakeConstants {
+    public static final int kCanId = 15;
     public static final double kIntakeSpeed = -1;
+    // Reverse ("puke") speed to spit game pieces back out
+    public static final double kEjectSpeed = 0.7;
   }
+
   public static final class BeltConstants {
+    public static final int kCanId = 12;
     public static final double kBeltSpeed = -0.35;
   }
 
   public static final class ShooterConstants {
-    // Flywheel speed (percent output)
-    public static final double kShooterSpeed = 0.5;
-    
+    public static final int kFlywheelCanId = 17;
+    public static final int kIndexerCanId = 14;
+
     // Feeder wheel speed (percent output)
     public static final double kFeederSpeed = 0.75;
-    
-    // Target RPM for shooter flywheel (SparkFlex)
-    public static final double kShooterTargetRPM = 3000.0;
-    
-    // RPM tolerance for speed control (±RPM)
-    public static final double kShooterRpmTolerance = 50.0;
-  // Hysteresis margin (RPM) to prevent feeder chatter on transient dips
-  public static final double kShooterRpmHysteresis = 50.0;
 
-  public static final double kShooterAutoRPM = 2800;
-    
-    // PID tuning parameters for SparkFlex internal controller (flywheel only)
-    // Neo Vortex motor: 6784 RPM max, so FF = 1/6784 ≈ 0.000147
-    // Updated FF from 0.000156 to match Neo Vortex characteristics
-    public static final double kFlywheelP = 0.0016869;
+    // Start feeding once the flywheel is within this many RPM below target
+    public static final double kFeedRpmMargin = 350;
+
+    public static final double kShooterAutoRPM = 2800;
+    public static final double kShooterCloseRPM = 3200;
+
+    // Flywheel RPM by distance (meters) from robot center to hub center.
+    // PLACEHOLDER points from the old fixed shots; replace with measured shots
+    // (the dashboard shows "Shooter/Hub Distance (m)"). Values outside the table
+    // clamp to the nearest end.
+    public static final InterpolatingDoubleTreeMap kDistanceToRPM = InterpolatingDoubleTreeMap.ofEntries(
+        Map.entry(1.2, kShooterAutoRPM),
+        Map.entry(2.5, kShooterCloseRPM));
+
+    // Direction the shooter fires relative to the robot front. Use
+    // Rotation2d.k180deg if it shoots out the back.
+    public static final Rotation2d kShooterFacing = Rotation2d.kZero;
+
+    // PID tuning parameters for SparkFlex internal controller (flywheel only).
+    // YAMS runs the Spark in rotations per second (not RPM), so these are the
+    // Bonney Lake RPM gains (P 0.0016869, D 0.0012) multiplied by 60.
+    public static final double kFlywheelP = 0.1012;
     public static final double kFlywheelI = 0.0;
-    public static final double kFlywheelD = 0.0012;
-    public static final double kFlywheelFF = 0.000147;  // 1/6784 for Neo Vortex
+    public static final double kFlywheelD = 0.072;
+    // Volts per RPS: theoretical Neo Vortex kV = 12V / (6784 RPM / 60). Characterize on robot.
+    public static final double kFlywheelFF = 0.1061;
 
-    public static int kFlywheelCurrentLimit = 60;
+    public static final int kFlywheelCurrentLimit = 60;
   }
 
   public static final class LimelightConstants {
     // Network table name for Limelight 2
     public static final String kLimelightTableName = "limelight";
-    
+
     // Limelight 2 pipeline ID (0 = default April tag pipeline)
     public static final int kAprilTagPipeline = 0;
-    
-    // Camera mounting position (meters from robot center)
-    public static final double kCameraOffsetX = 0.0;  // Forward/backward offset
-    public static final double kCameraOffsetY = 0.0;  // Left/right offset
-    public static final double kCameraHeightFromGround = 0.5;  // Height in meters
-    
-    // Camera angle (degrees, positive = tilted up)
-    public static final double kCameraPitchDegrees = 0.0;
-    public static final double kCameraRollDegrees = 0.0;
-    
+
+    // Camera mounting pose is configured in the Limelight web UI (robot-space camera pose)
+
     // Robot heading correction (PID gains for auto-alignment to AprilTag)
     public static final double kHeadingAlignP = 0.1;
     public static final double kHeadingAlignI = 0.0;
     public static final double kHeadingAlignD = 0.05;
-    
+
     // Target alignment tolerance (degrees)
     public static final double kHeadingTolerance = 2.0;
-    
+
     // Max angular velocity during alignment (rad/s)
     public static final double kMaxAlignmentAngularVelocity = 2.0;
 
-  // Dashboard keys for Limelight telemetry
-  public static final String kDashboardPrefix = "Limelight/";
-  public static final String kDashboardTargetTagIdKey = kDashboardPrefix + "Target Tag ID";
-  public static final String kDashboardHasTargetKey = kDashboardPrefix + "Has Target";
-  public static final String kDashboardTargetIdKey = kDashboardPrefix + "Target ID";
-  public static final String kDashboardHasDesiredKey = kDashboardPrefix + "Has Desired Target";
-  public static final String kDashboardOffsetXKey = kDashboardPrefix + "Offset X (deg)";
-  public static final String kDashboardOffsetYKey = kDashboardPrefix + "Offset Y (deg)";
-  public static final String kDashboardTargetAreaKey = kDashboardPrefix + "Target Area (%)";
-  public static final String kDashboardDistanceKey = kDashboardPrefix + "Distance to Target (m)";
-  public static final String kDashboardHorizontalDistanceKey = kDashboardPrefix + "Horizontal Distance (m)";
-  public static final String kDashboardRobotXKey = kDashboardPrefix + "Robot X (m)";
-  public static final String kDashboardRobotYKey = kDashboardPrefix + "Robot Y (m)";
-  public static final String kDashboardRobotHeadingKey = kDashboardPrefix + "Robot Heading (deg)";
-  public static final String kDashboardPipelineLatencyKey = kDashboardPrefix + "Pipeline Latency (ms)";
-  public static final String kDashboardActivePipelineKey = kDashboardPrefix + "Active Pipeline";
+    // Dashboard keys for Limelight telemetry
+    public static final String kDashboardPrefix = "Limelight/";
+    public static final String kDashboardTargetTagIdKey = kDashboardPrefix + "Target Tag ID";
+    public static final String kDashboardHasTargetKey = kDashboardPrefix + "Has Target";
+    public static final String kDashboardOffsetXKey = kDashboardPrefix + "Offset X (deg)";
+    public static final String kDashboardOffsetYKey = kDashboardPrefix + "Offset Y (deg)";
+    public static final String kDashboardTargetAreaKey = kDashboardPrefix + "Target Area (%)";
+    public static final String kDashboardDistanceKey = kDashboardPrefix + "Distance to Target (m)";
+    public static final String kDashboardHorizontalDistanceKey = kDashboardPrefix + "Horizontal Distance (m)";
 
-  // General status/debug keys for Limelight
-  public static final String kDashboardStatusKey = kDashboardPrefix + "Status";
-  public static final String kDashboardDebugKey = kDashboardPrefix + "Debug";
+    // General status/debug keys for Limelight
+    public static final String kDashboardStatusKey = kDashboardPrefix + "Status";
+    public static final String kDashboardDebugKey = kDashboardPrefix + "Debug";
 
-  // Subsystem telemetry keys
-  public static final String kShooterLastFlexSpeedKey = "PID Shooter Testing/Last Flex Speed";
-  public static final String kShooterLastMaxSpeedKey = "PID Shooter Testing/Last Indexer Speed";
-  public static final String kIntakeLastSpeedKey = "Intake/Last Speed";
-  public static final String kBeltLastSpeedKey = "Belt/Last Speed";
-
-  // Alliance-specific AprilTag IDs (change here if field targets differ)
-  public static final int kRedAllianceTargetTagID = 10;
-  public static final int kBlueAllianceTargetTagID = 26;
+    // Alliance-specific AprilTag IDs (change here if field targets differ)
+    public static final int kRedAllianceTargetTagID = 10;
+    public static final int kBlueAllianceTargetTagID = 26;
   }
 }
