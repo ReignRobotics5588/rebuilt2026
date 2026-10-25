@@ -3,7 +3,6 @@ package frc.robot;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -70,6 +69,7 @@ public class RobotContainer {
       new CommandXboxController(OIConstants.kDriverControllerPort);
   private final CommandXboxController m_operatorController =
       new CommandXboxController(OIConstants.kOperatorControllerPort);
+  private final DriverInput m_driverInput = new DriverInput(m_driverController);
 
   private final SendableChooser<Command> m_autoChooser;
 
@@ -81,14 +81,6 @@ public class RobotContainer {
 
     m_autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Autonomous Mode", m_autoChooser);
-  }
-
-  private double driverForward() {
-    return -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband);
-  }
-
-  private double driverLeft() {
-    return -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband);
   }
 
   private void configureDefaultCommands() {
@@ -109,9 +101,9 @@ public class RobotContainer {
     m_robotDrive.setDefaultCommand(
         new RunCommand(
             () -> m_robotDrive.drive(
-                driverForward(),
-                driverLeft(),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
+                m_driverInput.forward(),
+                m_driverInput.left(),
+                m_driverInput.rotation(),
                 true),
             m_robotDrive));
   }
@@ -129,7 +121,7 @@ public class RobotContainer {
     // Hold to aim at the hub while driving; shoots at the distance-based RPM
     m_driverController.rightTrigger()
         .whileTrue(new AimAndShootCommand(m_robotDrive, m_shooter, m_intake, m_belt,
-            this::driverForward, this::driverLeft));
+            m_driverInput::forward, m_driverInput::left));
 
     // Re-zero field-relative driving: point the robot away from the driver first
     m_driverController.start()
@@ -187,6 +179,9 @@ public class RobotContainer {
   }
 
   public void periodic() {
+    // Runs before the scheduler, so drive commands see this loop's sticks
+    m_driverInput.update();
+
     double yawRate = m_robotDrive.getRobotRelativeSpeed().omegaRadiansPerSecond;
     m_limelight.setRobotOrientation(m_robotDrive.getPose().getRotation(), yawRate);
 

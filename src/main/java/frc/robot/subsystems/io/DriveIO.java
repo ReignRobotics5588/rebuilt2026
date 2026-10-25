@@ -31,8 +31,6 @@ public interface DriveIO {
 
   default void setX() {}
 
-  default void resetOdometry(Pose2d pose) {}
-
   default void addVisionMeasurement(Pose2d visionPose, double timestampSeconds,
       Matrix<N3, N1> stdDevs) {}
 

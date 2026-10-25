@@ -76,10 +76,6 @@ public class DriveSubsystem extends SubsystemBase {
     return new Pose2d(p[0], p[1], Rotation2d.fromDegrees(p[2]));
   }
 
-  public void resetOdometry(Pose2d pose) {
-    m_io.resetOdometry(pose);
-  }
-
   public ChassisSpeeds getRobotRelativeSpeed() {
     return new ChassisSpeeds(
         m_inputs.chassisVxMetersPerSec,
@@ -94,10 +90,6 @@ public class DriveSubsystem extends SubsystemBase {
 
   public void zeroHeading() {
     m_io.zeroHeading();
-  }
-
-  public double getHeading() {
-    return m_inputs.gyroYawDegrees;
   }
 
   /** Drives straight forward/backward; give the robot several meters of room. */

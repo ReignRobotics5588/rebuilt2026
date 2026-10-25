@@ -28,7 +28,7 @@ public class IntakeThenShootAutoCommand extends Command {
    * @param intake the intake subsystem
    * @param shooter the shooter subsystem
    * @param belt the belt subsystem
-   * @param shooterRPMTarget the RPM at which to start the indexer (e.g., 1000)
+   * @param shooterRPMTarget flywheel target RPM; feeding starts within kFeedRpmMargin of it
    */
   public IntakeThenShootAutoCommand(Intake intake, Shooter shooter, Belt belt, double shooterRPMTarget) {
     m_intake = intake;
@@ -36,17 +36,6 @@ public class IntakeThenShootAutoCommand extends Command {
     m_belt = belt;
     m_shooterRPMTarget = shooterRPMTarget;
     addRequirements(m_intake, m_shooter, m_belt);
-  }
-
-  /**
-   * Creates a new IntakeThenShootAutoCommand with default shooter RPM of 1000.
-   *
-   * @param intake the intake subsystem
-   * @param shooter the shooter subsystem
-   * @param belt the belt subsystem
-   */
-  public IntakeThenShootAutoCommand(Intake intake, Shooter shooter, Belt belt) {
-    this(intake, shooter, belt, 1000.0);
   }
 
   @Override

@@ -41,8 +41,8 @@ public class AimAndShootCommand extends Command {
   private double m_fedSeconds = 0.0;
 
   /**
-   * @param xSpeed forward speed as a fraction of max (field-relative), already deadbanded
-   * @param ySpeed left speed as a fraction of max (field-relative), already deadbanded
+   * @param xSpeed forward speed as a fraction of max (field-relative), already shaped
+   * @param ySpeed left speed as a fraction of max (field-relative), already shaped
    */
   public AimAndShootCommand(DriveSubsystem drive, Shooter shooter, Intake intake, Belt belt,
       DoubleSupplier xSpeed, DoubleSupplier ySpeed) {

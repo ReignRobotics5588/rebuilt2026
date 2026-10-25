@@ -46,6 +46,18 @@ public final class Constants {
     public static final int kDriverControllerPort = 0;
     public static final int kOperatorControllerPort = 1;
     public static final double kDriveDeadband = 0.1;
+
+    // Stick response curve: output = stick^exponent (1 = linear, 2 = squared, 3 = cubic).
+    // Higher gives finer control near center while still reaching full speed.
+    public static final double kTranslationExponent = 2.0;
+    public static final double kRotationExponent = 2.0;
+
+    // How fast the commanded speed may change, in fractions of max speed per second.
+    // 2.0 = 0 to full speed in 0.5 s (~8.8 m/s^2 at 4.4 m/s). Decel is faster so
+    // the robot still stops promptly, but not so abruptly it tips.
+    public static final double kTranslationAccelPerSec = 2.0;
+    public static final double kTranslationDecelPerSec = 4.0;
+    public static final double kRotationAccelPerSec = 4.0;
   }
 
   public static final class AutoConstants {

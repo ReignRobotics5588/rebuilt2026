@@ -113,11 +113,6 @@ public class DriveIOYAMS implements DriveIO {
   }
 
   @Override
-  public void resetOdometry(Pose2d pose) {
-    m_swerveDrive.resetOdometry(pose);
-  }
-
-  @Override
   public void addVisionMeasurement(Pose2d visionPose, double timestampSeconds,
       Matrix<N3, N1> stdDevs) {
     m_swerveDrive.addVisionMeasurement(visionPose, timestampSeconds, stdDevs);

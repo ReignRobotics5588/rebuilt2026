@@ -135,10 +135,6 @@ public class Limelight extends SubsystemBase {
     return m_targetOffsetX;
   }
 
-  public double getTargetOffsetY() {
-    return m_targetOffsetY;
-  }
-
   public int getTargetID() {
     return m_targetID;
   }
@@ -147,71 +143,13 @@ public class Limelight extends SubsystemBase {
     return m_limelight.getData().targetData.getTargetArea();
   }
 
-  public double getPipelineLatency() {
-    double[] metrics = m_limelight.getData().targetData.getTargetMetrics();
-    // t2d array: [targetValid, targetCount, targetLatency, captureLatency, ...]
-    if (metrics.length >= 3) {
-      return metrics[2];
-    }
-    return 0.0;
-  }
-
-  public double[] getRobotPose() {
-    return m_latestPoseEstimate.map(pe -> {
-      var p = pe.pose;
-      var rot = p.getRotation();
-      return new double[]{
-          p.getX(), p.getY(), p.getZ(),
-          Math.toDegrees(rot.getX()), Math.toDegrees(rot.getY()), Math.toDegrees(rot.getZ())
-      };
-    }).orElse(new double[6]);
-  }
-
-  public double[] getRobotPoseRelativeToTarget() {
-    var pose = m_limelight.getData().targetData.getRobotToTarget();
-    var rot = pose.getRotation();
-    return new double[]{
-        pose.getX(), pose.getY(), pose.getZ(),
-        Math.toDegrees(rot.getX()), Math.toDegrees(rot.getY()), Math.toDegrees(rot.getZ())
-    };
-  }
-
-  public double[] getCameraPoseRelativeToTarget() {
-    var pose = m_limelight.getData().targetData.getCameraToTarget();
-    var rot = pose.getRotation();
-    return new double[]{
-        pose.getX(), pose.getY(), pose.getZ(),
-        Math.toDegrees(rot.getX()), Math.toDegrees(rot.getY()), Math.toDegrees(rot.getZ())
-    };
-  }
-
   public double getDistanceToTarget() {
     return m_limelight.getData().targetData.getRobotToTarget().getX();
-  }
-
-  public double getHorizontalDistanceToTarget() {
-    return m_limelight.getData().targetData.getRobotToTarget().getY();
-  }
-
-  public void setPipeline(int pipeline) {
-    m_limelight.getSettings().withPipelineIndex(pipeline);
-  }
-
-  public int getPipeline() {
-    return Constants.LimelightConstants.kAprilTagPipeline;
   }
 
   public void setLimelightActive(boolean enabled) {
     m_limelight.getSettings().withLimelightLEDMode(
         enabled ? LEDMode.PipelineControl : LEDMode.ForceOff);
-  }
-
-  public void ledOn() {
-    m_limelight.getSettings().withLimelightLEDMode(LEDMode.ForceOn);
-  }
-
-  public void ledOff() {
-    m_limelight.getSettings().withLimelightLEDMode(LEDMode.ForceOff);
   }
 
   public Optional<PoseEstimate> getLatestPoseEstimate() {
