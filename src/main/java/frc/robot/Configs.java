@@ -70,7 +70,7 @@ public final class Configs {
         static {
             flywheel_config
                     .idleMode(IdleMode.kCoast)
-                    .smartCurrentLimit(40);
+                    .smartCurrentLimit(Constants.ShooterConstants.kFlywheelCurrentLimit);
             
             // Configure PID for velocity control using the internal encoder
             flywheel_config.encoder
