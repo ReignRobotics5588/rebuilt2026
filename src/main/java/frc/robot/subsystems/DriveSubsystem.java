@@ -16,6 +16,11 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.networktables.StructPublisher;
 import frc.robot.Constants.DriveConstants;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -55,10 +60,33 @@ public class DriveSubsystem extends SubsystemBase {
           m_rearRight.getPosition()
       });
 
+  // AdvantageScope-compatible NetworkTables publishers (under /Drive)
+  private final NetworkTable m_table = NetworkTableInstance.getDefault().getTable("Drive");
+  private final StructArrayPublisher<SwerveModuleState> m_measuredStatesPub =
+      m_table.getStructArrayTopic("MeasuredStates", SwerveModuleState.struct).publish();
+  private final StructArrayPublisher<SwerveModuleState> m_desiredStatesPub =
+      m_table.getStructArrayTopic("DesiredStates", SwerveModuleState.struct).publish();
+  private final StructPublisher<Pose2d> m_posePub =
+      m_table.getStructTopic("RobotPose", Pose2d.struct).publish();
+  private final DoubleArrayPublisher m_turningRawPub =
+      m_table.getDoubleArrayTopic("TurningRawRadians").publish();
+  private final DoubleArrayPublisher m_turningCorrectedPub =
+      m_table.getDoubleArrayTopic("TurningCorrectedRadians").publish();
+  private final DoubleArrayPublisher m_chassisOffsetsPub =
+      m_table.getDoubleArrayTopic("ChassisAngularOffsets").publish();
+
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
     // Usage reporting for MAXSwerve template
     HAL.report(tResourceType.kResourceType_RobotDrive, tInstances.kRobotDriveSwerve_MaxSwerve);
+
+    // Offsets are constant, so publish once at construction.
+    m_chassisOffsetsPub.set(new double[] {
+        m_frontLeft.getChassisAngularOffset(),
+        m_frontRight.getChassisAngularOffset(),
+        m_rearLeft.getChassisAngularOffset(),
+        m_rearRight.getChassisAngularOffset()
+    });
   }
 
   Rotation2d getGyroAngle() {
@@ -76,6 +104,35 @@ public class DriveSubsystem extends SubsystemBase {
             m_rearLeft.getPosition(),
             m_rearRight.getPosition()
         });
+
+    // Publish swerve telemetry for AdvantageScope.
+    SwerveModuleState[] measured = new SwerveModuleState[] {
+        m_frontLeft.getState(),
+        m_frontRight.getState(),
+        m_rearLeft.getState(),
+        m_rearRight.getState()
+    };
+    SwerveModuleState[] desired = new SwerveModuleState[] {
+        m_frontLeft.getDesiredState(),
+        m_frontRight.getDesiredState(),
+        m_rearLeft.getDesiredState(),
+        m_rearRight.getDesiredState()
+    };
+    m_measuredStatesPub.set(measured);
+    m_desiredStatesPub.set(desired);
+    m_posePub.set(m_odometry.getPoseMeters());
+    m_turningRawPub.set(new double[] {
+        m_frontLeft.getRawTurningRadians(),
+        m_frontRight.getRawTurningRadians(),
+        m_rearLeft.getRawTurningRadians(),
+        m_rearRight.getRawTurningRadians()
+    });
+    m_turningCorrectedPub.set(new double[] {
+        measured[0].angle.getRadians(),
+        measured[1].angle.getRadians(),
+        measured[2].angle.getRadians(),
+        measured[3].angle.getRadians()
+    });
   }
 
   /**

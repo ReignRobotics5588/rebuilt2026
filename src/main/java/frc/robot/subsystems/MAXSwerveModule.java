@@ -87,6 +87,21 @@ public class MAXSwerveModule {
         new Rotation2d(m_turningEncoder.getPosition() - m_chassisAngularOffset));
   }
 
+  /** Current desired state (chassis-relative, pre-optimize). For logging. */
+  public SwerveModuleState getDesiredState() {
+    return m_desiredState;
+  }
+
+  /** Raw absolute turning encoder angle in radians, before chassis offset is applied. */
+  public double getRawTurningRadians() {
+    return m_turningEncoder.getPosition();
+  }
+
+  /** Configured chassis angular offset in radians. */
+  public double getChassisAngularOffset() {
+    return m_chassisAngularOffset;
+  }
+
   /**
    * Sets the desired state for the module.
    *
